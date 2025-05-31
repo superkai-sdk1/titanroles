@@ -1,0 +1,229 @@
+const numPlayers = 10;
+const playerTable = document.getElementById('player-rows');
+const ps = new BroadcastChannel('panel_status');
+const pl = new BroadcastChannel('player_list');
+const cl = new BroadcastChannel('class_list');
+const gi = new BroadcastChannel('game_info');
+const mi = new BroadcastChannel('main_info'); // Новый канал для основной информации
+let isFirstKill = true; // Флаг для отслеживания первого убийства
+
+function createPlayerRows(num) {
+    for (let i = 1; i <= num; i++) {
+        const row = document.createElement('div');
+        row.className = 'player-row player';
+        row.id = `player_${i}`;
+        row.innerHTML = `
+            <div class="player-row-content">
+                <div class="player-number" tabindex="0" onclick="highlightSpeaker(${i})">${i}</div>
+                <select class="player-select"></select>
+                <div class="player-row-icons player-row-statuses">
+                    <button class="s-button killed-button" title="Убит"><div onclick="changeStatus(this, 'killed')"></div></button>
+                    <button class="s-button voted-button" title="Заголосован"><div onclick="changeStatus(this, 'voted')"></div></button>
+                    <button class="s-button deleted-button" title="Удален"><div onclick="changeStatus(this, 'deleted')"></div></button>
+                </div>
+                <div class="player-row-icons player-row-roles">
+                    <button class="s-button don-button" title="Дон"><div onclick="changeRole(this, 'don')"></div></button>
+                    <button class="s-button mafia-button" title="Мафия"><div onclick="changeRole(this, 'mafia')"></div></button>
+                    <button class="s-button sheriff-button" title="Шериф"><div onclick="changeRole(this, 'sheriff')"></div></button>
+                </div>
+            </div>
+        `;
+        playerTable.appendChild(row);
+    }
+}
+
+$(document).ready(function () {
+    createPlayerRows(numPlayers);
+    $('.main').hide();
+    getPlayerList(player_list);
+    const welcomeModal = document.getElementById('welcome-modal');
+    if (welcomeModal) {
+        welcomeModal.style.display = 'block';
+        $('#fileToLoad').on('change', function () {
+            welcomeModal.style.display = 'none';
+            $('.main').show();
+        });
+    } else {
+        $('#fileToLoad').on('change', function () {
+            $('.main').show();
+            hideStatusesShowRoles();
+        });
+    }
+});
+
+function loadFileAsText() {
+    var fileToLoad = document.getElementById("fileToLoad").files[0];
+    var fileReader = new FileReader();
+    fileReader.onload = function (fileLoadedEvent) {
+        var textFromFileLoaded = fileLoadedEvent.target.result;
+        getPlayerList(textFromFileLoaded.split('\r\n'));
+    };
+    fileReader.readAsText(fileToLoad, "UTF-8");
+    $('.main').show();
+    $('header').hide();
+    hideStatusesShowRoles();
+}
+
+function getPlayerList(playerArray) {
+    document.querySelectorAll('.player-select').forEach((element, index) => {
+        $(element).empty();
+        playerArray.forEach(player => {
+            element.add(new Option(player.trim()));
+        });
+        $(element).children('option').eq(index).attr('selected', 'selected');
+    });
+}
+
+function changeStatus(object, status) {
+    const element = object.parentElement.parentElement.parentElement.parentElement;
+    if (element.classList.contains(status)) {
+        element.classList.remove(status);
+        element.classList.remove('dead');
+    } else {
+        if (element.classList.contains('dead')) {
+            element.classList.remove('killed', 'voted', 'deleted');
+        } else {
+            element.classList.add('dead');
+        }
+        element.classList.add(status);
+        if (status === 'killed' && isFirstKill) {
+            isFirstKill = false;
+            showBestMoveModal(element.id);
+        }
+    }
+    cl.postMessage(`${element.id}|${element.classList.value}`);
+}
+
+function changeRole(object, role) {
+    const element = object.parentElement.parentElement.parentElement.parentElement;
+    if (element.classList.contains(role)) {
+        element.classList.remove(role);
+    } else {
+        element.classList.remove('don', 'mafia', 'sheriff');
+        element.classList.add(role);
+    }
+    cl.postMessage(`${element.id}|${element.classList.value}`);
+}
+
+function clearStatus() {
+    document.querySelectorAll('.killed, .voted, .deleted, .dead').forEach(item => {
+        item.classList.remove('killed', 'voted', 'deleted', 'dead');
+    });
+    document.querySelectorAll('.best-move').forEach(item => {
+        item.remove();
+    });
+    document.querySelectorAll('.player').forEach(element => {
+        cl.postMessage(`${element.id}|${element.classList.value}`);
+    });
+    isFirstKill = true;
+    console.log("Статусы и ЛХ сброшены");
+}
+
+function clearRole() {
+    document.querySelectorAll('.don, .mafia, .sheriff').forEach(item => {
+        item.classList.remove('don', 'mafia', 'sheriff');
+    });
+    document.querySelectorAll('.player').forEach(element => {
+        cl.postMessage(`${element.id}|${element.classList.value}`);
+    });
+}
+
+$('.player-list-panel').on('change', '.player-select', function () {
+    const player = `${$(this).parents('.player')[0].id}|${$(this).find(":selected").val()}`;
+    pl.postMessage(player);
+});
+
+function sendAllData() {
+    document.querySelectorAll('.player').forEach(element => {
+        const item = element.querySelector('.player-select');
+        const player = `${element.id}|${$(item[item.selectedIndex]).text()}`;
+        pl.postMessage(player);
+    });
+    console.log("Данные игроков отправлены.");
+}
+
+// --- ДОБАВЛЕНО: Обработка поля основной информации и отправка через канал ---
+$('#main-info-input').on('input', function () {
+    const mainInfo = $(this).val();
+    mi.postMessage(mainInfo);
+});
+// ---
+
+$('#game-number-input').on('input', function () {
+    const gameNumber = $(this).val();
+    gi.postMessage(gameNumber);
+});
+
+function highlightSpeaker(playerNumber) {
+    ps.postMessage(`highlight|player_${playerNumber}`);
+}
+
+function showBestMoveModal(playerId) {
+    const modal = document.getElementById('best-move-modal');
+    modal.style.display = 'block';
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = function () {
+        modal.style.display = 'none';
+        selectedNumbers = [];
+        document.querySelectorAll('.number-button').forEach(button => button.classList.remove('selected-number'));
+    };
+    const saveBtn = modal.querySelector('#save-best-move');
+    saveBtn.onclick = function () {
+        if (selectedNumbers.length === 3) {
+            const bestMove = selectedNumbers.join('');
+            cl.postMessage(`${playerId}|${document.getElementById(playerId).classList.value}|best-move|${bestMove}`);
+            modal.style.display = 'none';
+            selectedNumbers = [];
+            document.querySelectorAll('.number-button').forEach(button => button.classList.remove('selected-number'));
+        } else {
+            alert("Пожалуйста, выберите три цифры.");
+        }
+    };
+}
+let selectedNumbers = [];
+function selectNumber(number) {
+    const button = document.querySelector(`.number-button:nth-child(${number})`);
+    if (!button.classList.contains('selected-number') && selectedNumbers.length < 3) {
+        button.classList.add('selected-number');
+        selectedNumbers.push(number);
+    } else if (button.classList.contains('selected-number')) {
+        button.classList.remove('selected-number');
+        selectedNumbers = selectedNumbers.filter(n => n !== number);
+    }
+}
+
+// --- Логика отображения статусов, ролей и кнопок ---
+
+function hideStatusesShowRoles() {
+    $('.main').removeClass('show-statuses-mode').addClass('show-roles-mode');
+    $('.player-row-statuses').hide();
+    $('.player-row-roles').show();
+    $('#show-players-btn').show();
+    $('#edit-roles-btn').hide();
+    $('#clear-role-btn').show();
+    $('#clear-status-btn').hide();
+}
+
+function showStatusesHideRoles() {
+    $('.main').removeClass('show-roles-mode').addClass('show-statuses-mode');
+    $('.player-row-statuses').show();
+    $('.player-row-roles').hide();
+    $('#show-players-btn').hide();
+    $('#edit-roles-btn').show();
+    $('#clear-role-btn').hide();
+    $('#clear-status-btn').show();
+}
+
+function confirmRolesAndShowStatuses() {
+    sendAllData();
+    showStatusesHideRoles();
+}
+
+function editRoles() {
+    hideStatusesShowRoles();
+}
+
+$(function () {
+    // При загрузке страницы по-умолчанию режим "Роли"
+    hideStatusesShowRoles();
+});
