@@ -7,6 +7,21 @@ const gi = new BroadcastChannel('game_info');
 const mi = new BroadcastChannel('main_info'); // Новый канал для основной информации
 let isFirstKill = true; // Флаг для отслеживания первого убийства
 
+// --- Список никнеймов для ручного ввода ---
+const nicknameList = [
+    "AMOR", "Asia", "Alien", "Alinellas", "Animag", "Bittir", "Black", "Black Jack", "DULASHA", "Dill",
+    "Dizi", "Dushman", "EL", "Fox", "Gremlin", "Geralt", "Gestalter", "Hisoka", "Ivory", "Kai",
+    "LIRICA", "Miamore", "Mulan", "Neo", "ProDoc", "Shinobi", "Soza", "Saul Goodman", "Scorpion",
+    "TONI MONTANA", "Tam", "ZONDR", "evil", "finnick", "Йору", "Адвокат", "Альтман", "Альфа", "Асур",
+    "Бес", "Биполярка", "Булочка", "Валькирия", "Великая", "228Данте69", "Даня", "Дита", "Добрый",
+    "Дэва", "Ева", "Завклубом", "Зайка", "Зара", "Знаток", "Зёма", "Кари", "Кир", "Кира", "Кобра",
+    "Кову", "Копибара", "Коссмос", "Красавчик", "Лазер", "Лестер", "Лимонная долька", "Белый склон",
+    "Луи", "Мрак", "Маркетолог", "Марсело", "Мау", "Мафия", "Минахор", "Нафиля", "Окси", "Пантера",
+    "Паранойа", "Подкова", "Подсолнух", "Психолог", "Рокфор", "Руди", "Скорпион", "Саид", "Саймон",
+    "Салливан", "Сатору", "Светлячек", "Сирена", "Смурфик", "Статистика", "Темир", "Типсон",
+    "Томас Шелби", "Учитель", "Феникс", "Физик", "Фил", "Хейтер", "Штиль", "Элис"
+];
+
 function createPlayerRows(num) {
     for (let i = 1; i <= num; i++) {
         const row = document.createElement('div');
@@ -49,6 +64,55 @@ $(document).ready(function () {
             hideStatusesShowRoles();
         });
     }
+});
+
+// --- Ручной ввод никнеймов ---
+$('#manual-entry-btn').on('click', function() {
+    $('header').hide();
+    $('#manual-entry-panel').show();
+
+    // Генерируем 10 полей с автодополнением (autocomplete)
+    let html = '';
+    for (let i = 1; i <= numPlayers; i++) {
+        html += `
+            <div style="margin-bottom: 8px;">
+                <label style="display:inline-block;width:80px;">Игрок ${i}:</label>
+                <input type="text" class="manual-nickname-input" data-index="${i-1}" autocomplete="off" style="width:220px;">
+            </div>
+        `;
+    }
+    $('#manual-players-list').html(html);
+
+    // jQuery UI Autocomplete для каждого input
+    $('.manual-nickname-input').autocomplete({
+        source: nicknameList,
+        minLength: 1
+    });
+});
+
+// Обработка сохранения ручного ввода
+$('#manual-entry-form').on('submit', function(e) {
+    e.preventDefault();
+    let selected = [];
+    $('.manual-nickname-input').each(function(){ selected.push($(this).val().trim()); });
+
+    // Проверка на пустые и дубликаты
+    let empty = selected.some(n=>!n);
+    let dups = (new Set(selected)).size !== selected.length;
+    if (empty) { alert('Заполните все поля!'); return; }
+    if (dups) { alert('Никнеймы не должны повторяться!'); return; }
+
+    // Проверка что все никнеймы из списка (опционально)
+    let wrong = selected.find(n => !nicknameList.includes(n));
+    if (wrong) { alert(`Ник "${wrong}" не найден в списке!`); return; }
+
+    getPlayerList(selected); // обновляем селекты
+
+    // --- ВАЖНО! Отправляем никнеймы в overlay для отображения фото ---
+    sendAllData();
+
+    $('#manual-entry-panel').hide();
+    $('.main').show();
 });
 
 function loadFileAsText() {
@@ -192,8 +256,6 @@ function selectNumber(number) {
     }
 }
 
-// --- Логика отображения статусов, ролей и кнопок ---
-
 function hideStatusesShowRoles() {
     $('.main').removeClass('show-statuses-mode').addClass('show-roles-mode');
     $('.player-row-statuses').hide();
@@ -224,7 +286,6 @@ function editRoles() {
 }
 
 $(function () {
-    // При загрузке страницы по-умолчанию режим "Роли"
     hideStatusesShowRoles();
 });
 
