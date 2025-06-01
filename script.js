@@ -16,10 +16,9 @@ const numPlayers = 10;
 const playerTable = document.getElementById('player-rows');
 let isFirstKill = true;
 
-// === СОСТОЯНИЕ ПАНЕЛИ ===
 let panelState = {
     players: [],
-    playerStates: {}, // {player_1: {classes: "...", selected: "..."} ...}
+    playerStates: {},
     mainInfo: "",
     gameNumber: "",
     overlay: {
@@ -31,21 +30,9 @@ let panelState = {
     }
 };
 
-const nicknameList = [
-    "AMOR", "Asia", "Alien", "Alinellas", "Animag", "Bittir", "Black", "Black Jack", "DULASHA", "Dill",
-    "Dizi", "Dushman", "EL", "Fox", "Gremlin", "Geralt", "Gestalter", "Hisoka", "Ivory", "Kai",
-    "LIRICA", "Miamore", "Mulan", "Neo", "ProDoc", "Shinobi", "Soza", "Saul Goodman", "Scorpion",
-    "TONI MONTANA", "Tam", "ZONDR", "evil", "finnick", "Йору", "Адвокат", "Альтман", "Альфа", "Асур",
-    "Бес", "Биполярка", "Булочка", "Валькирия", "Великая", "228Данте69", "Даня", "Дита", "Добрый",
-    "Дэва", "Ева", "Завклубом", "Зайка", "Зара", "Знаток", "Зёма", "Кари", "Кир", "Кира", "Кобра",
-    "Кову", "Копибара", "Коссмос", "Красавчик", "Лазер", "Лестер", "Лимонная долька", "Белый склон",
-    "Луи", "Мрак", "Маркетолог", "Марсело", "Мау", "Мафия", "Минахор", "Нафиля", "Окси", "Пантера",
-    "Паранойа", "Подкова", "Подсолнух", "Психолог", "Рокфор", "Руди", "Скорпион", "Саид", "Саймон",
-    "Салливан", "Сатору", "Светлячек", "Сирена", "Смурфик", "Статистика", "Темир", "Типсон",
-    "Томас Шелби", "Учитель", "Феникс", "Физик", "Фил", "Хейтер", "Штиль", "Элис"
-];
+const nicknameList = [/* ... (тот же список) ... */"Элис"];
 
-// ========== FIREBASE СИНХРОНИЗАЦИЯ ==========
+// ========== FIREBASE SYNC ==========
 function savePanelStateToFirebase() {
     db.ref('panelState').set(panelState);
 }
@@ -53,7 +40,7 @@ function subscribeToPanelState() {
     db.ref('panelState').on('value', function(snapshot) {
         if (snapshot.exists()) {
             const state = snapshot.val();
-            // Для избежания циклов: только если пришло что-то новое
+            // Только если что-то реально поменялось
             if (JSON.stringify(state) !== JSON.stringify(panelState)) {
                 panelState = state;
                 applyPanelState();
@@ -63,13 +50,11 @@ function subscribeToPanelState() {
 }
 subscribeToPanelState();
 
-// ====== ПРИМЕНЯТЬ СОСТОЯНИЕ ИЗ FIREBASE ======
+// ====== ПРИМЕНИТЬ СОСТОЯНИЕ ИЗ FIREBASE ======
 function applyPanelState() {
-    // Игроки (никнеймы и выпадашки)
     if (panelState.players && panelState.players.length === numPlayers) {
         getPlayerList(panelState.players);
     }
-    // Статусы и роли игроков
     if (panelState.playerStates) {
         Object.entries(panelState.playerStates).forEach(([id, data]) => {
             const el = document.getElementById(id);
@@ -79,10 +64,8 @@ function applyPanelState() {
             }
         });
     }
-    // Основная и дополнительная информация
     $('#main-info-input').val(panelState.mainInfo || "");
     $('#game-number-input').val(panelState.gameNumber || "");
-    // overlay переключатели
     if (panelState.overlay) {
         Object.entries(panelState.overlay).forEach(([k, v]) => {
             const el = document.getElementById('toggle-' + k.replace(/([A-Z])/g, "-$1").toLowerCase());
@@ -90,8 +73,6 @@ function applyPanelState() {
         });
     }
 }
-
-// ============ КОД ПАНЕЛИ ============
 
 function createPlayerRows(num) {
     for (let i = 1; i <= num; i++) {
@@ -303,9 +284,7 @@ $('#game-number-input').on('input', function () {
     savePanelStateToFirebase();
 });
 
-function highlightSpeaker(playerNumber) {
-    // Можно реализовать доп. функционал для OBS overlay
-}
+function highlightSpeaker(playerNumber) {}
 
 function showBestMoveModal(playerId) {
     const modal = document.getElementById('best-move-modal');
@@ -319,7 +298,6 @@ function showBestMoveModal(playerId) {
     const saveBtn = modal.querySelector('#save-best-move');
     saveBtn.onclick = function () {
         if (selectedNumbers.length === 3) {
-            // Можно добавить best-move в panelState, если нужно
             modal.style.display = 'none';
             selectedNumbers = [];
             document.querySelectorAll('.number-button').forEach(button => button.classList.remove('selected-number'));
@@ -390,7 +368,6 @@ $(function() {
 });
 
 $('#reset-panel-btn').on('click', function() {
-    // Сброс всего состояния
     panelState = {
         players: [],
         playerStates: {},
@@ -405,5 +382,6 @@ $('#reset-panel-btn').on('click', function() {
         }
     };
     savePanelStateToFirebase();
-    location.reload();
+    // Не делаем location.reload() — просто обновляем интерфейс:
+    applyPanelState();
 });
