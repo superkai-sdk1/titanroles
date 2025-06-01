@@ -152,6 +152,3 @@ gp.onmessage = (event) => {
     setTimeout(() => phasePanel.classList.remove('animate-phase'), 1000);
 };
 
-/* --- Overlay Settings CHANNEL for visibility and blur --- */
-// Логика реализована в overlay.html через <script>
-// (оставлено пустым для наглядности, чтобы избежать конфликтов)
