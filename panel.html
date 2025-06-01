@@ -8,10 +8,17 @@
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <!-- QR-код библиотека -->
+    <script src="https://unpkg.com/qrious/dist/qrious.min.js"></script>
 </head>
 <body>
 <header class="m3e-header">
     <div class="stream-title">Панель управления стримом</div>
+    <div id="qr-block" style="text-align:center; margin:18px;">
+        <p>Откройте панель на телефоне:</p>
+        <canvas id="qr-canvas"></canvas>
+        <div id="qr-url" style="font-size:0.9em;word-break:break-all;"></div>
+    </div>
     <div class="file-block">
         <label for="fileToLoad" id="file-label" class="m3e-btn m3e-btn-main">Загрузить файл</label>
         <input type="file" name="file" id="fileToLoad" accept=".txt" onchange="loadFileAsText()">
@@ -105,6 +112,17 @@
 </div>
 <script src="script.js"></script>
 <script>
+    // QR-код генерация
+    (function(){
+        const panelUrl = window.location.href.split('#')[0];
+        const qr = new QRious({
+            element: document.getElementById('qr-canvas'),
+            value: panelUrl,
+            size: 160
+        });
+        document.getElementById('qr-url').textContent = panelUrl;
+    })();
+
     // Overlay settings channel
     const overlaySettings = new BroadcastChannel('overlay_settings');
     function sendOverlaySettings() {
