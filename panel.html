@@ -6,7 +6,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Manrope:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <!-- Скрипты библиотеки -->
+    <!-- Firebase, jQuery, jQuery UI, QRious -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
@@ -23,13 +23,13 @@
     </div>
     <div class="file-block">
         <label for="fileToLoad" id="file-label" class="m3e-btn m3e-btn-main">Загрузить файл</label>
-        <input type="file" name="file" id="fileToLoad" accept=".txt" onchange="loadFileAsText()">
+        <input type="file" name="file" id="fileToLoad" accept=".txt">
         <button id="manual-entry-btn" type="button" class="m3e-btn m3e-btn-secondary">Ручной ввод</button>
     </div>
     <div class="titan-signature">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
 </header>
 
-<!-- M3E-стилизованный контейнер для ручного ввода -->
+<!-- Панель ручного ввода -->
 <div id="manual-entry-panel" class="m3e-manual-panel" style="display:none;">
     <h2 class="m3e-manual-title">Выберите никнеймы игроков</h2>
     <form id="manual-entry-form" class="m3e-manual-form">
@@ -42,7 +42,7 @@
 <div class="main sidebar-panel show-roles-mode">
     <h1 class="dashboard-title">Панель управления</h1>
     <div class="player-list-panel" id="player-rows">
-        <!-- Игроки будут добавлены скриптом -->
+        <!-- Игроки добавляются скриптом -->
     </div>
     <div class="panel-controls">
         <button id="show-players-btn" class="m3e-btn m3e-btn-main" onclick="confirmRolesAndShowStatuses()">Сохранить рассадку</button>
@@ -51,7 +51,7 @@
         <button id="clear-status-btn" class="m3e-btn m3e-btn-secondary" onclick="clearStatus()">Очистить статусы</button>
         <input type="text" id="main-info-input" class="m3e-input" placeholder="Основная информация">
         <input type="text" id="game-number-input" class="m3e-input" placeholder="Дополнительная информация">
-        <button class="reset-panel m3e-btn m3e-btn-danger" onclick="location.reload()">Сбросить панель</button>
+        <button class="reset-panel m3e-btn m3e-btn-danger" type="button" id="reset-panel-btn">Сбросить панель</button>
         <!-- Переключатели настройки overlay -->
         <div class="overlay-toggles">
             <div class="toggle-row">
@@ -112,7 +112,6 @@
         <button id="save-best-move" class="m3e-btn m3e-btn-main">Сохранить</button>
     </div>
 </div>
-<!-- Подключите основной скрипт после всех библиотек -->
 <script src="script.js"></script>
 <script>
 $(function(){
