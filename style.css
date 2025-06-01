@@ -30,12 +30,204 @@ html, body {
     font-size: 16px;
     color: var(--md-sys-color-on-surface);
     margin: 0;
+    overflow-x: hidden; /* <--- Запрещаем горизонтальный скролл */
 }
 
 body {
     color: var(--md-sys-color-on-surface);
+    overflow-x: hidden; /* <--- Запрещаем горизонтальный скролл для body */
 }
 
+/* --- M3E HEADER & BUTTONS --- */
+.m3e-header {
+    width: 100vw;
+    min-height: 100vh;
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    transition: background 0.3s;
+    padding-top: 48px;
+    position: relative;
+}
+
+.stream-title {
+    font-size: 1.4em; /* уменьшен размер шрифта */
+    font-weight: 900;
+    color: var(--md-sys-color-primary);
+    letter-spacing: 0.01em;
+    font-family: var(--font-headline);
+    text-shadow: 0 2px 14px #42008a33;
+    margin-bottom: 34px;
+    text-align: center;
+}
+
+.file-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    width: 100%;
+}
+
+header input[type="file"] { display: none; }
+
+.m3e-btn {
+    font-family: inherit;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    font-size: 1.12em;
+    border-radius: var(--md-sys-shape-corner-medium);
+    padding: 13px 34px;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    margin: 0;
+    margin-bottom: 0;
+    transition: background .13s, box-shadow .13s, color .13s;
+    box-shadow: 0 2px 16px 0 #42008a22;
+    min-width: 210px;
+    margin-top: 0;
+    margin-bottom: 0;
+    display: block;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+}
+
+.m3e-btn-main {
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+}
+.m3e-btn-main:hover, .m3e-btn-main:focus {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+}
+.m3e-btn-secondary {
+    background: var(--md-sys-color-surface-variant);
+    color: var(--md-sys-color-on-surface);
+}
+.m3e-btn-secondary:hover, .m3e-btn-secondary:focus {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+}
+.m3e-btn-danger {
+    background: var(--md-sys-color-error);
+    color: var(--md-sys-color-on-error);
+}
+.m3e-btn-danger:hover, .m3e-btn-danger:focus {
+    background: #ff6659;
+    color: #fff;
+}
+
+/* Центрирование текста и выравнивание для всех кнопок */
+.m3e-btn, .m3e-btn-main, .m3e-btn-secondary, .m3e-btn-danger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.titan-signature {
+    text-align: center;
+    font-size: 0.85em;
+    color: var(--md-sys-color-on-surface-variant);
+    margin-top: 38px;
+    margin-bottom: 10px;
+    letter-spacing: 0.02em;
+    width: 100%;
+    font-family: var(--font-body);
+}
+.titan-signature-inpanel {
+    margin-top: 18px;
+    margin-bottom: 0;
+    font-size: 0.83em;
+    color: var(--md-sys-color-outline);
+}
+
+/* --- MANUAL ENTRY PANEL --- */
+.m3e-manual-panel {
+    background: var(--md-sys-color-surface-container);
+    border-radius: var(--md-sys-shape-corner-large);
+    box-shadow: 0 0 32px 0 #0004;
+    max-width: 430px;
+    min-width: 260px;
+    margin: 44px auto 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    color: var(--md-sys-color-on-surface);
+    padding: 32px 24px 10px 24px;
+    position: relative;
+}
+.m3e-manual-title {
+    font-size: 1.33em;
+    font-weight: 800;
+    color: var(--md-sys-color-primary);
+    text-align: center;
+    margin-bottom: 18px;
+    font-family: var(--font-headline);
+}
+.m3e-manual-form {
+    width: 100%;
+}
+.m3e-manual-list {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+}
+.m3e-manual-list label {
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 1em;
+    margin-right: 8px;
+    font-weight: 500;
+    min-width: 80px;
+    display: inline-block;
+}
+.m3e-manual-list input[type="text"] {
+    width: 220px;
+    padding: 10px 13px;
+    border: 1.5px solid var(--md-sys-color-outline);
+    border-radius: var(--md-sys-shape-corner-small);
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--md-sys-color-on-surface);
+    background: var(--md-sys-color-surface);
+    outline: none;
+    box-shadow: none;
+    transition: border .13s;
+}
+.m3e-manual-list input[type="text"]:focus {
+    border-color: var(--md-sys-color-primary);
+    box-shadow: 0 0 0 2px var(--md-sys-color-primary);
+}
+.m3e-manual-list > div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* --- INPUTS --- */
+.m3e-input {
+    width: 100%;
+    padding: 12px 13px;
+    border: 1.5px solid var(--md-sys-color-outline);
+    border-radius: var(--md-sys-shape-corner-small);
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--md-sys-color-on-surface);
+    background: var(--md-sys-color-surface);
+    margin-bottom: 0;
+    outline: none;
+    box-shadow: none;
+    transition: border .13s;
+}
+.m3e-input:focus { border-color: var(--md-sys-color-primary); box-shadow: 0 0 0 2px var(--md-sys-color-primary); }
+
+/* Остальные стандартные стили панели */
 .main.sidebar-panel {
     background: var(--md-sys-color-surface-container);
     border-radius: var(--md-sys-shape-corner-large);
@@ -51,37 +243,6 @@ body {
     color: var(--md-sys-color-on-surface);
 }
 
-header {
-    width: 100vw;
-    min-height: 100vh;
-    background: var(--md-sys-color-surface-container-high);
-    color: var(--md-sys-color-on-surface);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: background 0.3s;
-}
-
-header input[type="file"] { display: none; }
-header label {
-    background: var(--md-sys-color-primary);
-    color: var(--md-sys-color-on-primary);
-    padding: 13px 34px;
-    border-radius: var(--md-sys-shape-corner-medium);
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 1.12em;
-    letter-spacing: 0.01em;
-    transition: background .13s, box-shadow .13s, color .13s;
-    box-shadow: 0 2px 16px 0 #42008a22;
-    outline: none;
-    border: none;
-}
-header label:hover, header label:focus {
-    background: var(--md-sys-color-primary-container);
-    color: var(--md-sys-color-on-primary-container);
-}
-
 .dashboard-title {
     font-size: 1.4em;
     font-weight: 900;
@@ -93,6 +254,7 @@ header label:hover, header label:focus {
     text-shadow: 0 2px 14px #42008a33;
 }
 
+/* --- Остальной CSS панели управления из исходника (player list, statuses, roles, overlay-toggles и т.д.) --- */
 .player-list-panel {
     display: flex;
     flex-direction: column;
