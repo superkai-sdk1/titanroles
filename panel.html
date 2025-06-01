@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-    <!-- QR-код библиотека -->
     <script src="https://unpkg.com/qrious/dist/qrious.min.js"></script>
 </head>
 <body>
@@ -36,11 +35,7 @@
     </form>
     <div class="titan-signature">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
 </div>
-<div id="qr-block" style="text-align:center; margin:18px;">
-    <p>Откройте панель на телефоне:</p>
-    <canvas id="qr-canvas"></canvas>
-    <div id="qr-url" style="font-size:0.9em;word-break:break-all;"></div>
-</div>
+
 <div class="main sidebar-panel show-roles-mode">
     <h1 class="dashboard-title">Панель управления</h1>
     <div class="player-list-panel" id="player-rows">
@@ -116,8 +111,8 @@
 </div>
 <script src="script.js"></script>
 <script>
-    // QR-код генерация
-    (function(){
+$(function(){
+    if (document.getElementById('qr-canvas')) {
         const panelUrl = window.location.href.split('#')[0];
         const qr = new QRious({
             element: document.getElementById('qr-canvas'),
@@ -125,39 +120,9 @@
             size: 160
         });
         document.getElementById('qr-url').textContent = panelUrl;
-    })();
-
-    // Overlay settings channel
-    const overlaySettings = new BroadcastChannel('overlay_settings');
-    function sendOverlaySettings() {
-        overlaySettings.postMessage({
-            hidePlayers: document.getElementById('toggle-hide-players').checked,
-            showMainInfo: document.getElementById('toggle-main-info').checked,
-            showAdditionalInfo: document.getElementById('toggle-additional-info').checked,
-            showStatusPanel: document.getElementById('toggle-status-panel').checked,
-            blur: document.getElementById('toggle-blur').checked,
-        });
+        $('#qr-block').show();
     }
-    // Инициализация дефолтных состояний
-    $(function() {
-        $('.overlay-toggles input[type="checkbox"]').on('change', sendOverlaySettings);
-        sendOverlaySettings();
-    });
-</script>
-<script src="https://unpkg.com/qrious/dist/qrious.min.js"></script>
-<script>
-    $(function(){
-        if (document.getElementById('qr-canvas')) {
-            const panelUrl = window.location.href.split('#')[0];
-            const qr = new QRious({
-                element: document.getElementById('qr-canvas'),
-                value: panelUrl,
-                size: 160
-            });
-            document.getElementById('qr-url').textContent = panelUrl;
-            $('#qr-block').show();
-        }
-    });
+});
 </script>
 </body>
 </html>
