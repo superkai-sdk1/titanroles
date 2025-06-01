@@ -112,16 +112,14 @@
 <script src="script.js"></script>
 <script>
 $(function(){
-    if (document.getElementById('qr-canvas')) {
-        const panelUrl = window.location.href.split('#')[0];
-        const qr = new QRious({
-            element: document.getElementById('qr-canvas'),
-            value: panelUrl,
-            size: 160
-        });
-        document.getElementById('qr-url').textContent = panelUrl;
-        $('#qr-block').show();
-    }
+    const panelUrl = window.location.href.split('#')[0];
+    const qr = new QRious({
+        element: document.getElementById('qr-canvas'),
+        value: panelUrl,
+        size: 160
+    });
+    document.getElementById('qr-url').textContent = panelUrl;
+    $('#qr-block').show();
 });
 </script>
 </body>
