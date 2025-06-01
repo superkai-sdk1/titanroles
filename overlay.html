@@ -8,13 +8,13 @@
 </head>
 <body class="visible">
 <!-- Блок слева: Дополнительная информация -->
-<div class="overlay-header">
+<div class="overlay-header" id="overlay-header">
     <div class="overlay-info-block" id="game-info">Дополнительная информация</div>
 </div>
 <!-- Новый блок по центру: Основная информация -->
 <div class="overlay-main-block" id="main-info">Основная информация</div>
 <!-- Новый блок справа: статус-панель -->
-<div class="status-panel">
+<div class="status-panel" id="status-panel">
     <div class="status-line">
         <div class="icon killed-icon"></div>
         <span id="killed-players"></span>
@@ -22,8 +22,8 @@
         <span id="voted-players"></span>
     </div>
 </div>
-
-<footer class="show-roles">
+<div id="overlay-blur-el" class="overlay-blur"></div>
+<footer class="show-roles" id="footer-players">
     <div class="player" id="player_1">
         <div class="photo"></div>
         <div class="bg"></div>
@@ -106,5 +106,45 @@
     </div>
 </footer>
 <script src="overlay.js"></script>
+<script>
+    // Overlay settings
+    const overlaySettings = new BroadcastChannel('overlay_settings');
+    function setOverlayState(settings) {
+        // Игроки
+        document.getElementById('footer-players').style.display = settings.hidePlayers ? 'none' : '';
+        // Основная информация
+        document.getElementById('main-info').style.display = settings.showMainInfo ? '' : 'none';
+        // Дополнительная информация
+        document.getElementById('overlay-header').style.display = settings.showAdditionalInfo ? '' : 'none';
+        // Порядок ухода (статус-панель)
+        document.getElementById('status-panel').style.display = settings.showStatusPanel ? '' : 'none';
+        // Блюр
+        const blurDiv = document.getElementById('overlay-blur-el');
+        if (settings.blur) {
+            blurDiv.classList.add('active');
+            document.body.classList.add('overlay-blur-bg');
+        } else {
+            blurDiv.classList.remove('active');
+            document.body.classList.remove('overlay-blur-bg');
+        }
+        // Блюр должен быть поверх всего, кроме диалогов (ставим в конец body), но не мешать кликам (pointer-events: none).
+        blurDiv.style.position = 'fixed';
+        blurDiv.style.top = 0;
+        blurDiv.style.left = 0;
+        blurDiv.style.width = '100vw';
+        blurDiv.style.height = '100vh';
+        blurDiv.style.zIndex = 9998;
+        blurDiv.style.pointerEvents = 'none';
+    }
+    overlaySettings.onmessage = (e) => setOverlayState(e.data);
+    // Стартовые значения (если панель еще не была открыта)
+    setOverlayState({
+        hidePlayers: false,
+        showMainInfo: true,
+        showAdditionalInfo: true,
+        showStatusPanel: true,
+        blur: false,
+    });
+</script>
 </body>
 </html>
