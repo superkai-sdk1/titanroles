@@ -1,8 +1,3 @@
-// ======= ДОБАВЬТЕ ПЕРЕД ЭТИМ КОДОМ =======
-// Подключите в HTML перед этим файлом:
-// <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-// <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-
 // === FIREBASE INIT ===
 const firebaseConfig = {
   apiKey: "AIzaSyDFU5WNA-qKS7-x_kYRZv-6ltq5quE7VQw",
@@ -16,18 +11,12 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-// =========================================
 
 const numPlayers = 10;
 const playerTable = document.getElementById('player-rows');
-const ps = new BroadcastChannel('panel_status');
-const pl = new BroadcastChannel('player_list');
-const cl = new BroadcastChannel('class_list');
-const gi = new BroadcastChannel('game_info');
-const mi = new BroadcastChannel('main_info');
 let isFirstKill = true;
 
-// === СОСТОЯНИЕ ПАНЕЛИ (вся синхронизация идет через этот объект) ===
+// === СОСТОЯНИЕ ПАНЕЛИ ===
 let panelState = {
     players: [],
     playerStates: {}, // {player_1: {classes: "...", selected: "..."} ...}
@@ -64,6 +53,7 @@ function subscribeToPanelState() {
     db.ref('panelState').on('value', function(snapshot) {
         if (snapshot.exists()) {
             const state = snapshot.val();
+            // Для избежания циклов: только если пришло что-то новое
             if (JSON.stringify(state) !== JSON.stringify(panelState)) {
                 panelState = state;
                 applyPanelState();
@@ -132,19 +122,10 @@ $(document).ready(function () {
     createPlayerRows(numPlayers);
     $('.main').hide();
     getPlayerList(nicknameList);
-    const welcomeModal = document.getElementById('welcome-modal');
-    if (welcomeModal) {
-        welcomeModal.style.display = 'block';
-        $('#fileToLoad').on('change', function () {
-            welcomeModal.style.display = 'none';
-            $('.main').show();
-        });
-    } else {
-        $('#fileToLoad').on('change', function () {
-            $('.main').show();
-            hideStatusesShowRoles();
-        });
-    }
+    $('#fileToLoad').on('change', function () {
+        $('.main').show();
+        hideStatusesShowRoles();
+    });
 });
 
 // --- Ручной ввод никнеймов ---
@@ -169,7 +150,6 @@ $('#manual-entry-btn').on('click', function() {
     });
 });
 
-// Обработка сохранения ручного ввода
 $('#manual-entry-form').on('submit', function(e) {
     e.preventDefault();
     let selected = [];
@@ -184,7 +164,6 @@ $('#manual-entry-form').on('submit', function(e) {
     if (wrong) { alert(`Ник "${wrong}" не найден в списке!`); return; }
 
     panelState.players = selected;
-    // Пересоздать playerStates пустыми
     panelState.playerStates = {};
     for (let i = 1; i <= numPlayers; i++) {
         panelState.playerStates[`player_${i}`] = {
@@ -208,7 +187,6 @@ function loadFileAsText() {
         var textFromFileLoaded = fileLoadedEvent.target.result;
         const arr = textFromFileLoaded.split('\r\n');
         panelState.players = arr;
-        // Пересоздать playerStates пустыми
         panelState.playerStates = {};
         for (let i = 1; i <= numPlayers; i++) {
             panelState.playerStates[`player_${i}`] = {
@@ -252,12 +230,10 @@ function changeStatus(object, status) {
             showBestMoveModal(element.id);
         }
     }
-    // Сохраняем состояние игрока
     if (panelState.playerStates[element.id]) {
         panelState.playerStates[element.id].classes = element.className;
     }
     savePanelStateToFirebase();
-    cl.postMessage(`${element.id}|${element.classList.value}`);
 }
 
 function changeRole(object, role) {
@@ -272,7 +248,6 @@ function changeRole(object, role) {
         panelState.playerStates[element.id].classes = element.className;
     }
     savePanelStateToFirebase();
-    cl.postMessage(`${element.id}|${element.classList.value}`);
 }
 
 function clearStatus() {
@@ -282,7 +257,6 @@ function clearStatus() {
     document.querySelectorAll('.best-move').forEach(item => {
         item.remove();
     });
-    // Очистить статусы в panelState.playerStates
     Object.keys(panelState.playerStates).forEach(id => {
         panelState.playerStates[id].classes = 'player-row player';
     });
@@ -295,9 +269,7 @@ function clearRole() {
     document.querySelectorAll('.don, .mafia, .sheriff').forEach(item => {
         item.classList.remove('don', 'mafia', 'sheriff');
     });
-    // Очистить роли в panelState.playerStates
     Object.keys(panelState.playerStates).forEach(id => {
-        // Удаляем только роли, не статусы!
         let c = panelState.playerStates[id].classes.split(' ').filter(cls => cls !== 'don' && cls !== 'mafia' && cls !== 'sheriff');
         panelState.playerStates[id].classes = c.join(' ');
     });
@@ -311,14 +283,12 @@ $('.player-list-panel').on('change', '.player-select', function () {
         panelState.playerStates[id].selected = value;
     }
     savePanelStateToFirebase();
-    pl.postMessage(`${id}|${value}`);
 });
 
 function sendAllData() {
     document.querySelectorAll('.player').forEach(element => {
         const item = element.querySelector('.player-select');
         const player = `${element.id}|${$(item[item.selectedIndex]).text()}`;
-        pl.postMessage(player);
     });
     console.log("Данные игроков отправлены.");
 }
@@ -326,17 +296,15 @@ function sendAllData() {
 $('#main-info-input').on('input', function () {
     panelState.mainInfo = $(this).val();
     savePanelStateToFirebase();
-    mi.postMessage(panelState.mainInfo);
 });
 
 $('#game-number-input').on('input', function () {
     panelState.gameNumber = $(this).val();
     savePanelStateToFirebase();
-    gi.postMessage(panelState.gameNumber);
 });
 
 function highlightSpeaker(playerNumber) {
-    ps.postMessage(`highlight|player_${playerNumber}`);
+    // Можно реализовать доп. функционал для OBS overlay
 }
 
 function showBestMoveModal(playerId) {
@@ -351,8 +319,7 @@ function showBestMoveModal(playerId) {
     const saveBtn = modal.querySelector('#save-best-move');
     saveBtn.onclick = function () {
         if (selectedNumbers.length === 3) {
-            const bestMove = selectedNumbers.join('');
-            cl.postMessage(`${playerId}|${document.getElementById(playerId).classList.value}|best-move|${bestMove}`);
+            // Можно добавить best-move в panelState, если нужно
             modal.style.display = 'none';
             selectedNumbers = [];
             document.querySelectorAll('.number-button').forEach(button => button.classList.remove('selected-number'));
@@ -406,7 +373,7 @@ $(function () {
     hideStatusesShowRoles();
 });
 
-const overlaySettings = new BroadcastChannel('overlay_settings');
+// Overlay switches
 function sendOverlaySettings() {
     panelState.overlay = {
         hidePlayers: document.getElementById('toggle-hide-players').checked,
@@ -416,14 +383,13 @@ function sendOverlaySettings() {
         blur: document.getElementById('toggle-blur').checked
     };
     savePanelStateToFirebase();
-    overlaySettings.postMessage(panelState.overlay);
 }
 $(function() {
     $('.overlay-toggles input[type="checkbox"]').on('change', sendOverlaySettings);
     sendOverlaySettings();
 });
 
-$('.reset-panel').on('click', function() {
+$('#reset-panel-btn').on('click', function() {
     // Сброс всего состояния
     panelState = {
         players: [],
