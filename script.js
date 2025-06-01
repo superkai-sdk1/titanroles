@@ -1,3 +1,23 @@
+// ======= ДОБАВЬТЕ ПЕРЕД ЭТИМ КОДОМ =======
+// Подключите в HTML перед этим файлом:
+// <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+// === FIREBASE INIT ===
+const firebaseConfig = {
+  apiKey: "AIzaSyDFU5WNA-qKS7-x_kYRZv-6ltq5quE7VQw",
+  authDomain: "titanroles.firebaseapp.com",
+  databaseURL: "https://titanroles-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "titanroles",
+  storageBucket: "titanroles.firebasestorage.app",
+  messagingSenderId: "686684638394",
+  appId: "1:686684638394:web:4bb4527b7e3422dd520683",
+  measurementId: "G-TFCJQNRHJF"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+// =========================================
+
 const numPlayers = 10;
 const playerTable = document.getElementById('player-rows');
 const ps = new BroadcastChannel('panel_status');
@@ -6,6 +26,21 @@ const cl = new BroadcastChannel('class_list');
 const gi = new BroadcastChannel('game_info');
 const mi = new BroadcastChannel('main_info');
 let isFirstKill = true;
+
+// === СОСТОЯНИЕ ПАНЕЛИ (вся синхронизация идет через этот объект) ===
+let panelState = {
+    players: [],
+    playerStates: {}, // {player_1: {classes: "...", selected: "..."} ...}
+    mainInfo: "",
+    gameNumber: "",
+    overlay: {
+        hidePlayers: false,
+        showMainInfo: true,
+        showAdditionalInfo: true,
+        showStatusPanel: true,
+        blur: false
+    }
+};
 
 const nicknameList = [
     "AMOR", "Asia", "Alien", "Alinellas", "Animag", "Bittir", "Black", "Black Jack", "DULASHA", "Dill",
@@ -21,84 +56,50 @@ const nicknameList = [
     "Томас Шелби", "Учитель", "Феникс", "Физик", "Фил", "Хейтер", "Штиль", "Элис"
 ];
 
-// ============ СИНХРОНИЗАЦИЯ ПАНЕЛЕЙ ============
-
-// ID для фильтрации своих событий
-window.__titanPanelSyncId = window.__titanPanelSyncId || Math.random().toString(36).slice(2);
-
-// Синхронизация состояния между всеми панелями
-function syncPanelState(changeType, data) {
-    const payload = {
-        type: changeType,
-        data: data,
-        ts: Date.now(),
-        sender: window.__titanPanelSyncId
-    };
-    localStorage.setItem('titanroles-panel-sync', JSON.stringify(payload));
+// ========== FIREBASE СИНХРОНИЗАЦИЯ ==========
+function savePanelStateToFirebase() {
+    db.ref('panelState').set(panelState);
 }
-
-window.addEventListener('storage', function(e) {
-    if (e.key === 'titanroles-panel-sync' && e.newValue) {
-        const payload = JSON.parse(e.newValue);
-        if (payload.sender === window.__titanPanelSyncId) return; // свой ивент не слушаем
-
-        switch(payload.type) {
-            case 'changeRole':
-                {
-                    const {id, classes} = payload.data;
-                    const el = document.getElementById(id);
-                    if (el) el.className = classes;
-                    cl.postMessage(`${id}|${classes}`);
-                }
-                break;
-            case 'changeStatus':
-                {
-                    const {id, classes} = payload.data;
-                    const el = document.getElementById(id);
-                    if (el) el.className = classes;
-                    cl.postMessage(`${id}|${classes}`);
-                }
-                break;
-            case 'playerSelect':
-                {
-                    const {id, value} = payload.data;
-                    const el = document.getElementById(id);
-                    if (el) {
-                        $(el).find('.player-select').val(value);
-                        pl.postMessage(`${id}|${value}`);
-                    }
-                }
-                break;
-            case 'mainInfo':
-                {
-                    $('#main-info-input').val(payload.data.value);
-                    mi.postMessage(payload.data.value);
-                }
-                break;
-            case 'gameNumber':
-                {
-                    $('#game-number-input').val(payload.data.value);
-                    gi.postMessage(payload.data.value);
-                }
-                break;
-            case 'overlaySettings':
-                {
-                    Object.entries(payload.data).forEach(([k, v]) => {
-                        const el = document.getElementById('toggle-' + k.replace(/([A-Z])/g, "-$1").toLowerCase());
-                        if (el) el.checked = v;
-                    });
-                    sendOverlaySettings();
-                }
-                break;
-            case 'reset':
-                {
-                    location.reload();
-                }
-                break;
-            default: break;
+function subscribeToPanelState() {
+    db.ref('panelState').on('value', function(snapshot) {
+        if (snapshot.exists()) {
+            const state = snapshot.val();
+            if (JSON.stringify(state) !== JSON.stringify(panelState)) {
+                panelState = state;
+                applyPanelState();
+            }
         }
+    });
+}
+subscribeToPanelState();
+
+// ====== ПРИМЕНЯТЬ СОСТОЯНИЕ ИЗ FIREBASE ======
+function applyPanelState() {
+    // Игроки (никнеймы и выпадашки)
+    if (panelState.players && panelState.players.length === numPlayers) {
+        getPlayerList(panelState.players);
     }
-});
+    // Статусы и роли игроков
+    if (panelState.playerStates) {
+        Object.entries(panelState.playerStates).forEach(([id, data]) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.className = data.classes;
+                $(el).find('.player-select').val(data.selected);
+            }
+        });
+    }
+    // Основная и дополнительная информация
+    $('#main-info-input').val(panelState.mainInfo || "");
+    $('#game-number-input').val(panelState.gameNumber || "");
+    // overlay переключатели
+    if (panelState.overlay) {
+        Object.entries(panelState.overlay).forEach(([k, v]) => {
+            const el = document.getElementById('toggle-' + k.replace(/([A-Z])/g, "-$1").toLowerCase());
+            if (el) el.checked = v;
+        });
+    }
+}
 
 // ============ КОД ПАНЕЛИ ============
 
@@ -182,6 +183,17 @@ $('#manual-entry-form').on('submit', function(e) {
     let wrong = selected.find(n => !nicknameList.includes(n));
     if (wrong) { alert(`Ник "${wrong}" не найден в списке!`); return; }
 
+    panelState.players = selected;
+    // Пересоздать playerStates пустыми
+    panelState.playerStates = {};
+    for (let i = 1; i <= numPlayers; i++) {
+        panelState.playerStates[`player_${i}`] = {
+            classes: 'player-row player',
+            selected: selected[i-1]
+        };
+    }
+    savePanelStateToFirebase();
+
     getPlayerList(selected);
     sendAllData();
 
@@ -194,7 +206,18 @@ function loadFileAsText() {
     var fileReader = new FileReader();
     fileReader.onload = function (fileLoadedEvent) {
         var textFromFileLoaded = fileLoadedEvent.target.result;
-        getPlayerList(textFromFileLoaded.split('\r\n'));
+        const arr = textFromFileLoaded.split('\r\n');
+        panelState.players = arr;
+        // Пересоздать playerStates пустыми
+        panelState.playerStates = {};
+        for (let i = 1; i <= numPlayers; i++) {
+            panelState.playerStates[`player_${i}`] = {
+                classes: 'player-row player',
+                selected: arr[i-1]
+            };
+        }
+        savePanelStateToFirebase();
+        getPlayerList(arr);
     };
     fileReader.readAsText(fileToLoad, "UTF-8");
     $('.main').show();
@@ -229,8 +252,12 @@ function changeStatus(object, status) {
             showBestMoveModal(element.id);
         }
     }
+    // Сохраняем состояние игрока
+    if (panelState.playerStates[element.id]) {
+        panelState.playerStates[element.id].classes = element.className;
+    }
+    savePanelStateToFirebase();
     cl.postMessage(`${element.id}|${element.classList.value}`);
-    syncPanelState('changeStatus', {id: element.id, classes: element.classList.value});
 }
 
 function changeRole(object, role) {
@@ -241,8 +268,11 @@ function changeRole(object, role) {
         element.classList.remove('don', 'mafia', 'sheriff');
         element.classList.add(role);
     }
+    if (panelState.playerStates[element.id]) {
+        panelState.playerStates[element.id].classes = element.className;
+    }
+    savePanelStateToFirebase();
     cl.postMessage(`${element.id}|${element.classList.value}`);
-    syncPanelState('changeRole', {id: element.id, classes: element.classList.value});
 }
 
 function clearStatus() {
@@ -252,11 +282,12 @@ function clearStatus() {
     document.querySelectorAll('.best-move').forEach(item => {
         item.remove();
     });
-    document.querySelectorAll('.player').forEach(element => {
-        cl.postMessage(`${element.id}|${element.classList.value}`);
+    // Очистить статусы в panelState.playerStates
+    Object.keys(panelState.playerStates).forEach(id => {
+        panelState.playerStates[id].classes = 'player-row player';
     });
+    savePanelStateToFirebase();
     isFirstKill = true;
-    syncPanelState('reset', {});
     console.log("Статусы и ЛХ сброшены");
 }
 
@@ -264,16 +295,23 @@ function clearRole() {
     document.querySelectorAll('.don, .mafia, .sheriff').forEach(item => {
         item.classList.remove('don', 'mafia', 'sheriff');
     });
-    document.querySelectorAll('.player').forEach(element => {
-        cl.postMessage(`${element.id}|${element.classList.value}`);
+    // Очистить роли в panelState.playerStates
+    Object.keys(panelState.playerStates).forEach(id => {
+        // Удаляем только роли, не статусы!
+        let c = panelState.playerStates[id].classes.split(' ').filter(cls => cls !== 'don' && cls !== 'mafia' && cls !== 'sheriff');
+        panelState.playerStates[id].classes = c.join(' ');
     });
-    syncPanelState('reset', {});
+    savePanelStateToFirebase();
 }
 
 $('.player-list-panel').on('change', '.player-select', function () {
-    const player = `${$(this).parents('.player')[0].id}|${$(this).find(":selected").val()}`;
-    pl.postMessage(player);
-    syncPanelState('playerSelect', {id: $(this).parents('.player')[0].id, value: $(this).find(":selected").val()});
+    const id = $(this).parents('.player')[0].id;
+    const value = $(this).find(":selected").val();
+    if (panelState.playerStates[id]) {
+        panelState.playerStates[id].selected = value;
+    }
+    savePanelStateToFirebase();
+    pl.postMessage(`${id}|${value}`);
 });
 
 function sendAllData() {
@@ -286,15 +324,15 @@ function sendAllData() {
 }
 
 $('#main-info-input').on('input', function () {
-    const mainInfo = $(this).val();
-    mi.postMessage(mainInfo);
-    syncPanelState('mainInfo', {value: mainInfo});
+    panelState.mainInfo = $(this).val();
+    savePanelStateToFirebase();
+    mi.postMessage(panelState.mainInfo);
 });
 
 $('#game-number-input').on('input', function () {
-    const gameNumber = $(this).val();
-    gi.postMessage(gameNumber);
-    syncPanelState('gameNumber', {value: gameNumber});
+    panelState.gameNumber = $(this).val();
+    savePanelStateToFirebase();
+    gi.postMessage(panelState.gameNumber);
 });
 
 function highlightSpeaker(playerNumber) {
@@ -370,20 +408,15 @@ $(function () {
 
 const overlaySettings = new BroadcastChannel('overlay_settings');
 function sendOverlaySettings() {
-    overlaySettings.postMessage({
+    panelState.overlay = {
         hidePlayers: document.getElementById('toggle-hide-players').checked,
         showMainInfo: document.getElementById('toggle-main-info').checked,
         showAdditionalInfo: document.getElementById('toggle-additional-info').checked,
         showStatusPanel: document.getElementById('toggle-status-panel').checked,
-        blur: document.getElementById('toggle-blur').checked,
-    });
-    syncPanelState('overlaySettings', {
-        hidePlayers: document.getElementById('toggle-hide-players').checked,
-        showMainInfo: document.getElementById('toggle-main-info').checked,
-        showAdditionalInfo: document.getElementById('toggle-additional-info').checked,
-        showStatusPanel: document.getElementById('toggle-status-panel').checked,
-        blur: document.getElementById('toggle-blur').checked,
-    });
+        blur: document.getElementById('toggle-blur').checked
+    };
+    savePanelStateToFirebase();
+    overlaySettings.postMessage(panelState.overlay);
 }
 $(function() {
     $('.overlay-toggles input[type="checkbox"]').on('change', sendOverlaySettings);
@@ -391,5 +424,20 @@ $(function() {
 });
 
 $('.reset-panel').on('click', function() {
-    syncPanelState('reset', {});
+    // Сброс всего состояния
+    panelState = {
+        players: [],
+        playerStates: {},
+        mainInfo: "",
+        gameNumber: "",
+        overlay: {
+            hidePlayers: false,
+            showMainInfo: true,
+            showAdditionalInfo: true,
+            showStatusPanel: true,
+            blur: false
+        }
+    };
+    savePanelStateToFirebase();
+    location.reload();
 });
