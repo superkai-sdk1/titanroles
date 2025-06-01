@@ -227,3 +227,19 @@ $(function () {
     // При загрузке страницы по-умолчанию режим "Роли"
     hideStatusesShowRoles();
 });
+
+/* --- Overlay Settings BROADCAST --- */
+const overlaySettings = new BroadcastChannel('overlay_settings');
+function sendOverlaySettings() {
+    overlaySettings.postMessage({
+        hidePlayers: document.getElementById('toggle-hide-players').checked,
+        showMainInfo: document.getElementById('toggle-main-info').checked,
+        showAdditionalInfo: document.getElementById('toggle-additional-info').checked,
+        showStatusPanel: document.getElementById('toggle-status-panel').checked,
+        blur: document.getElementById('toggle-blur').checked,
+    });
+}
+$(function() {
+    $('.overlay-toggles input[type="checkbox"]').on('change', sendOverlaySettings);
+    sendOverlaySettings();
+});
