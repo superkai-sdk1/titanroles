@@ -1,6 +1,5 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap');
 
-/* Material 3 expressive palette root variables */
 :root {
     --md-sys-color-primary: #b69df8;
     --md-sys-color-on-primary: #2a0055;
@@ -23,7 +22,6 @@
 
 body {
     margin: 0;
-    line-height: 0;
     font-family: 'Manrope', sans-serif;
     line-height: 1;
     position: absolute;
@@ -42,6 +40,162 @@ body.visible {
     opacity: 1;
 }
 
+/* --- BLUR overlay --- */
+.overlay-blur {
+    background: rgba(24,24,37,0.10)
+    transition: backdrop-filter 0.45s cubic-bezier(.4,0,.2,1), -webkit-backdrop-filter 0.45s cubic-bezier(.4,0,.2,1);
+    backdrop-filter: blur(280px);
+    -webkit-backdrop-filter: blur(280px);
+}
+.overlay-blur.active {
+    backdrop-filter: blur(280px);
+    -webkit-backdrop-filter: blur(280px);
+}
+body.overlay-blur-bg {
+    transition: background 0.35s;
+    background: rgba(24,24,37,0.85) !important;
+}
+
+/* ==== HEADER & INFO BLOCKS ==== */
+.overlay-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    position: absolute;
+    top: 22px;
+    left: 22px;
+    z-index: 20;
+}
+
+.overlay-info-block {
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    border-radius: var(--md-sys-shape-corner-large);
+    box-shadow: 0 4px 24px #0003;
+    font-family: var(--font-headline);
+    font-weight: 700;
+    font-size: 1.22em;
+    padding: 16px 28px 14px 28px;
+    min-width: 50px;
+    max-width: 520px;
+    text-align: center;
+    letter-spacing: 0.01em;
+    border: 1.5px solid var(--md-sys-color-primary-container);
+    transition: box-shadow .15s, border .13s;
+    margin-bottom: 0;
+    user-select: none;
+}
+
+.overlay-info-block.phase-block {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    border: 1.5px solid var(--md-sys-color-primary);
+    font-size: 1.15em;
+    margin-top: 6px;
+    text-align: center;
+    box-shadow: 0 6px 32px #b69df822;
+}
+
+.overlay-main-block {
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    border-radius: var(--md-sys-shape-corner-large);
+    box-shadow: 0 4px 24px #0003;
+    font-family: var(--font-headline);
+    font-weight: 700;
+    font-size: 1.22em;
+    padding: 16px 28px 14px 28px;
+    min-width: 50px;
+    max-width: 520px;
+    text-align: center;
+    letter-spacing: 0.01em;
+    border: 1.5px solid var(--md-sys-color-primary-container);
+    transition: box-shadow .15s, border .13s;
+    margin-bottom: 0;
+    user-select: none;
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+}
+
+.status-panel {
+    background: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    border-radius: var(--md-sys-shape-corner-large);
+    box-shadow: 0 4px 24px #0003;
+    font-family: var(--font-headline);
+    font-weight: 700;
+    font-size: 1.22em;
+    padding: 16px 28px 14px 28px;
+    min-width: 50px;
+    max-width: 520px;
+    letter-spacing: 0.01em;
+    border: 1.5px solid var(--md-sys-color-primary-container);
+    transition: box-shadow .15s, border .13s;
+    margin-bottom: 0;
+    user-select: none;
+    position: absolute;
+    top: 30px;
+    right: 22px;
+    z-index: 20;
+}
+
+.status-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.icon {
+    width: 24px;
+    height: 24px;
+    background-size: cover;
+    background-position: center;
+}
+
+.killed-icon {
+    background-image: url("content/icon/killed.png");
+}
+
+.voted-icon {
+    background-image: url("content/icon/voted.png");
+}
+
+@media (max-width: 700px) {
+    .overlay-header {
+        top: 8px;
+        left: 8px;
+        gap: 7px;
+    }
+    .overlay-info-block {
+        font-size: 1em;
+        text-align: center;
+        padding: 10px 13px;
+        min-width: 50px;
+        max-width: 98vw;
+    }
+    .status-panel {
+        font-size: 1em;
+        padding: 10px 13px;
+        min-width: 120px;
+        max-width: 98vw;
+        top: 8px;
+        right: 8px;
+    }
+    .overlay-main-block {
+        font-size: 1em;
+        padding: 10px 13px;
+        min-width: 120px;
+        max-width: 98vw;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}
+
+/* --- нижний блок игроков (footer) --- */
 footer {
     position: absolute;
     bottom: 10px;
@@ -240,113 +394,6 @@ footer {
     }
 }
 
-/* ==== NEW HEADER MATERIAL 3 STYLE ==== */
-.overlay-header {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    position: absolute;
-    top: 22px;
-    left: 22px;
-    z-index: 20;
-}
-
-.overlay-info-block {
-    background: var(--md-sys-color-surface-container-high);
-    color: var(--md-sys-color-on-surface);
-    border-radius: var(--md-sys-shape-corner-large);
-    box-shadow: 0 4px 24px #0003;
-    font-family: var(--font-headline);
-    font-weight: 700;
-    font-size: 1.22em;
-    padding: 16px 28px 14px 28px;
-    min-width: 50px;
-    max-width: 520px;
-    text-align: center;
-    letter-spacing: 0.01em;
-    border: 1.5px solid var(--md-sys-color-primary-container);
-    transition: box-shadow .15s, border .13s;
-    margin-bottom: 0;
-    user-select: none;
-}
-
-.overlay-info-block.phase-block {
-    background: var(--md-sys-color-primary-container);
-    color: var(--md-sys-color-on-primary-container);
-    border: 1.5px solid var(--md-sys-color-primary);
-    font-size: 1.15em;
-    margin-top: 6px;
-    text-align: center;
-    box-shadow: 0 6px 32px #b69df822;
-}
-
-@media (max-width: 700px) {
-    .overlay-header {
-        top: 8px;
-        left: 8px;
-        gap: 7px;
-    }
-    .overlay-info-block {
-        font-size: 1em;
-        text-align: center;
-        padding: 10px 13px;
-        min-width: 50px;
-        max-width: 98vw;
-    }
-}
-.status-panel {
-    background: var(--md-sys-color-surface-container-high);
-    color: var(--md-sys-color-on-surface);
-    border-radius: var(--md-sys-shape-corner-large);
-    box-shadow: 0 4px 24px #0003;
-    font-family: var(--font-headline);
-    font-weight: 700;
-    font-size: 1.22em;
-    padding: 16px 28px 14px 28px;
-    min-width: 50px;
-    max-width: 520px;
-    letter-spacing: 0.01em;
-    border: 1.5px solid var(--md-sys-color-primary-container);
-    transition: box-shadow .15s, border .13s;
-    margin-bottom: 0;
-    user-select: none;
-    position: absolute;
-    top: 30px;
-    right: 22px;
-    z-index: 20;
-}
-
-@media (max-width: 700px) {
-    .status-panel {
-        font-size: 1em;
-        padding: 10px 13px;
-        min-width: 120px;
-        max-width: 98vw;
-        top: 8px;
-        right: 8px;
-    }
-}
-
-.status-line {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.icon {
-    width: 24px;
-    height: 24px;
-    background-size: cover;
-    background-position: center;
-}
-
-.killed-icon {
-    background-image: url("content/icon/killed.png");
-}
-
-.voted-icon {
-    background-image: url("content/icon/voted.png");
-}
 .best-move {
     position: absolute;
     top: 25px;
@@ -398,32 +445,27 @@ footer {
     display: none;
 }
 
-.overlay-main-block {
-    background: var(--md-sys-color-surface-container-high);
-    color: var(--md-sys-color-on-surface);
-    border-radius: var(--md-sys-shape-corner-large);
-    box-shadow: 0 4px 24px #0003;
-    font-family: var(--font-headline);
-    font-weight: 700;
-    font-size: 1.22em;
-    padding: 16px 28px 14px 28px;
-    min-width: 50px;
-    max-width: 520px;
-    text-align: center;
-    letter-spacing: 0.01em;
-    border: 1.5px solid var(--md-sys-color-primary-container);
-    transition: box-shadow .15s, border .13s;
-    margin-bottom: 0;
-    user-select: none;
-    position: absolute;
-
-    top: 22px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 20;
-}
-
 @media (max-width: 700px) {
+    .overlay-header {
+        top: 8px;
+        left: 8px;
+        gap: 7px;
+    }
+    .overlay-info-block {
+        font-size: 1em;
+        text-align: center;
+        padding: 10px 13px;
+        min-width: 50px;
+        max-width: 98vw;
+    }
+    .status-panel {
+        font-size: 1em;
+        padding: 10px 13px;
+        min-width: 120px;
+        max-width: 98vw;
+        top: 8px;
+        right: 8px;
+    }
     .overlay-main-block {
         font-size: 1em;
         padding: 10px 13px;
