@@ -25,6 +25,44 @@
         <input type="text" id="main-info-input" placeholder="Основная информация">
         <input type="text" id="game-number-input" placeholder="Дополнительная информация">
         <button class="reset-panel" onclick="location.reload()">Сбросить панель</button>
+        <!-- Переключатели настройки overlay -->
+        <div class="overlay-toggles">
+            <div class="toggle-row">
+                <label class="m3e-switch">
+                    <input type="checkbox" id="toggle-hide-players">
+                    <span class="slider"></span>
+                </label>
+                <span>Скрыть игроков</span>
+            </div>
+            <div class="toggle-row">
+                <label class="m3e-switch">
+                    <input type="checkbox" id="toggle-main-info" checked>
+                    <span class="slider"></span>
+                </label>
+                <span>Основная информация</span>
+            </div>
+            <div class="toggle-row">
+                <label class="m3e-switch">
+                    <input type="checkbox" id="toggle-additional-info" checked>
+                    <span class="slider"></span>
+                </label>
+                <span>Дополнительная информация</span>
+            </div>
+            <div class="toggle-row">
+                <label class="m3e-switch">
+                    <input type="checkbox" id="toggle-status-panel" checked>
+                    <span class="slider"></span>
+                </label>
+                <span>Порядок ухода</span>
+            </div>
+            <div class="toggle-row">
+                <label class="m3e-switch">
+                    <input type="checkbox" id="toggle-blur">
+                    <span class="slider"></span>
+                </label>
+                <span>Блюр</span>
+            </div>
+        </div>
     </div>
 </div>
 <div id="best-move-modal" class="modal">
@@ -47,5 +85,23 @@
     </div>
 </div>
 <script src="script.js"></script>
+<script>
+    // Overlay settings channel
+    const overlaySettings = new BroadcastChannel('overlay_settings');
+    function sendOverlaySettings() {
+        overlaySettings.postMessage({
+            hidePlayers: document.getElementById('toggle-hide-players').checked,
+            showMainInfo: document.getElementById('toggle-main-info').checked,
+            showAdditionalInfo: document.getElementById('toggle-additional-info').checked,
+            showStatusPanel: document.getElementById('toggle-status-panel').checked,
+            blur: document.getElementById('toggle-blur').checked,
+        });
+    }
+    // Инициализация дефолтных состояний
+    $(function() {
+        $('.overlay-toggles input[type="checkbox"]').on('change', sendOverlaySettings);
+        sendOverlaySettings();
+    });
+</script>
 </body>
 </html>
