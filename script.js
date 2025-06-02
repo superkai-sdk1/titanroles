@@ -1,3 +1,5 @@
+// script.js — версия панели с WebSocket синхронизацией и отправкой данных на overlay через BroadcastChannel
+
 let panelState = {
     players: [],
     playerStates: {},
@@ -62,7 +64,8 @@ const bcast_class_list  = new BroadcastChannel('class_list');
 const bcast_main_info   = new BroadcastChannel('main_info');
 const bcast_game_info   = new BroadcastChannel('game_info');
 const bcast_panel_status = new BroadcastChannel('panel_status');
-const bcast_game_phase = new BroadcastChannel('game_phase'); // если потребуется
+const bcast_game_phase = new BroadcastChannel('game_phase');
+const bcast_overlay_settings = new BroadcastChannel('overlay_settings');
 
 function broadcastToOverlay() {
     // 1. Никнеймы и фото
@@ -86,7 +89,9 @@ function broadcastToOverlay() {
     // 3. Основная и доп. информация
     bcast_main_info.postMessage(panelState.mainInfo || "");
     bcast_game_info.postMessage(panelState.gameNumber || "");
-    // 4. Остальное — по необходимости (highlight, game_phase и т.д.)
+    // 4. Overlay переключатели (чекбоксы)
+    bcast_overlay_settings.postMessage(panelState.overlay);
+    // 5. Остальное — по необходимости (highlight, game_phase и т.д.)
     // bcast_panel_status.postMessage(...) если нужно
     // bcast_game_phase.postMessage(...) если нужно
 }
