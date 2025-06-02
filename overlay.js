@@ -3,7 +3,8 @@ const pl = new BroadcastChannel('player_list');
 const cl = new BroadcastChannel('class_list');
 const gi = new BroadcastChannel('game_info');
 const gp = new BroadcastChannel('game_phase');
-const mi = new BroadcastChannel('main_info'); // Добавляем канал для основной информации
+const mi = new BroadcastChannel('main_info');
+const bcast_overlay_settings = new BroadcastChannel('overlay_settings'); // Добавлено для overlay settings
 
 const killedPlayers = [];
 const votedPlayers = [];
@@ -151,3 +152,43 @@ gp.onmessage = (event) => {
     phasePanel.classList.add('animate-phase');
     setTimeout(() => phasePanel.classList.remove('animate-phase'), 1000);
 };
+
+// --- НОВОЕ: Обработка overlay_settings ---
+bcast_overlay_settings.onmessage = (event) => {
+    setOverlayState(event.data);
+};
+
+// --- Функция применения overlay switches (используется overlay.html, но на всякий случай дублируем) ---
+function setOverlayState(overlay) {
+    if (!overlay) return;
+    // Скрыть игроков
+    let footer = document.getElementById('footer-players');
+    if (footer) footer.style.display = overlay.hidePlayers ? 'none' : '';
+    // Основная инфа
+    let mainInfoBlock = document.getElementById('main-info');
+    if (mainInfoBlock) mainInfoBlock.style.display = overlay.showMainInfo ? '' : 'none';
+    // Доп. инфа
+    let overlayHeader = document.getElementById('overlay-header');
+    if (overlayHeader) overlayHeader.style.display = overlay.showAdditionalInfo ? '' : 'none';
+    // Статус-панель
+    let statusPanel = document.getElementById('status-panel');
+    if (statusPanel) statusPanel.style.display = overlay.showStatusPanel ? '' : 'none';
+    // Блюр
+    let blurDiv = document.getElementById('overlay-blur-el');
+    if (blurDiv) {
+        if (overlay.blur) {
+            blurDiv.classList.add('active');
+            document.body.classList.add('overlay-blur-bg');
+        } else {
+            blurDiv.classList.remove('active');
+            document.body.classList.remove('overlay-blur-bg');
+        }
+        blurDiv.style.position = 'fixed';
+        blurDiv.style.top = 0;
+        blurDiv.style.left = 0;
+        blurDiv.style.width = '100vw';
+        blurDiv.style.height = '100vh';
+        blurDiv.style.zIndex = 9998;
+        blurDiv.style.pointerEvents = 'none';
+    }
+}
