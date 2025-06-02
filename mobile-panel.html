@@ -7,40 +7,20 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <style>
-        body { 
-            font-size: 1.08em; 
-            padding: 0 2px; 
-            background: var(--md-sys-color-background); 
-        }
-        .main {
-            max-width: 100vw;
-            min-width: 0;
-            padding: 0 2px;
-        }
-        header, #qr-block, .file-block {
-            display: none !important;
-        }
-        .sidebar-panel {
-            min-height: 0;
-        }
-        .dashboard-title {
-            font-size: 1.1em;
-            margin-bottom: 0.7em;
-        }
+        body { font-size: 1.08em; padding: 0 2px; background: var(--md-sys-color-background); }
+        .main { max-width: 100vw; min-width: 0; padding: 0 2px;}
+        header, #qr-block, .file-block { display: none !important; }
+        .sidebar-panel { min-height: 0;}
+        .dashboard-title { font-size: 1.1em; margin-bottom: 0.7em;}
         @media (max-width: 600px) {
-            .main {
-                padding: 0 1px;
-            }
-            .player-row-content {
-                flex-direction: column;
-                gap: 6px;
-                font-size: 0.98em;
-            }
+            .main { padding: 0 1px;}
+            .player-row-content { flex-direction: column; gap: 6px; font-size: 0.98em;}
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="ws-sync.js"></script>
+    <script src="script.js"></script>
 </head>
 <body>
     <!-- Панель ручного ввода (оставим, если вам это нужно) -->
@@ -127,6 +107,5 @@
             <button id="save-best-move" class="m3e-btn m3e-btn-main">Сохранить</button>
         </div>
     </div>
-    <script src="script.js"></script>
 </body>
 </html>
