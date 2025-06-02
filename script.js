@@ -1,106 +1,29 @@
-// script.js — версия панели с WebSocket синхронизацией и отправкой данных на overlay через BroadcastChannel
-
-let panelState = {
-    players: [],
-    playerStates: {},
-    mainInfo: "",
-    gameNumber: "",
-    overlay: {
-        hidePlayers: false,
-        showMainInfo: true,
-        showAdditionalInfo: true,
-        showStatusPanel: true,
-        blur: false
-    }
-};
-
 const numPlayers = 10;
-let playerTable;
+const playerTable = document.getElementById('player-rows');
+const ps = new BroadcastChannel('panel_status');
+const pl = new BroadcastChannel('player_list');
+const cl = new BroadcastChannel('class_list');
+const gi = new BroadcastChannel('game_info');
+const mi = new BroadcastChannel('main_info');
+const overlaySettings = new BroadcastChannel('overlay_settings');
 let isFirstKill = true;
 
-// ====== SYNC ======
-connectWS(function (state) {
-    if (state) {
-        panelState = state;
-        applyPanelState();
-        broadcastToOverlay(); // При восстановлении панели тоже обновить overlay
-    }
-});
-
-function sendPanelState() {
-    sendState(panelState);       // WebSocket для других панелей/устройств
-    broadcastToOverlay();        // BroadcastChannel для overlay.html
-}
-
-// ===================
-
-const nicknameList = [/* ... */"Элис"]; // <-- Подставьте список никнеймов
-
-function applyPanelState() {
-    if (panelState.players && panelState.players.length === numPlayers) {
-        getPlayerList(panelState.players);
-    }
-    if (panelState.playerStates) {
-        Object.entries(panelState.playerStates).forEach(([id, data]) => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.className = data.classes;
-                $(el).find('.player-select').val(data.selected);
-            }
-        });
-    }
-    $('#main-info-input').val(panelState.mainInfo || "");
-    $('#game-number-input').val(panelState.gameNumber || "");
-    if (panelState.overlay) {
-        Object.entries(panelState.overlay).forEach(([k, v]) => {
-            const el = document.getElementById('toggle-' + k.replace(/([A-Z])/g, "-$1").toLowerCase());
-            if (el) el.checked = v;
-        });
-    }
-}
-
-// --- BROADCAST TO OVERLAY ---
-const bcast_player_list = new BroadcastChannel('player_list');
-const bcast_class_list  = new BroadcastChannel('class_list');
-const bcast_main_info   = new BroadcastChannel('main_info');
-const bcast_game_info   = new BroadcastChannel('game_info');
-const bcast_panel_status = new BroadcastChannel('panel_status');
-const bcast_game_phase = new BroadcastChannel('game_phase');
-const bcast_overlay_settings = new BroadcastChannel('overlay_settings');
-
-function broadcastToOverlay() {
-    // 1. Никнеймы и фото
-    if (panelState.players && panelState.players.length === numPlayers) {
-        for (let i = 1; i <= numPlayers; i++) {
-            const nick = panelState.players[i - 1];
-            bcast_player_list.postMessage(`player_${i}|${nick}`);
-        }
-    }
-    // 2. Классы, роли, best-move
-    if (panelState.playerStates) {
-        Object.entries(panelState.playerStates).forEach(([id, data]) => {
-            let msg = `${id}|${data.classes || 'player-row player'}`;
-            // Если есть best-move — добавим
-            if (data.bestMove && Array.isArray(data.bestMove) && data.bestMove.length) {
-                msg += `|best-move|${data.bestMove.join(' ')}`;
-            }
-            bcast_class_list.postMessage(msg);
-        });
-    }
-    // 3. Основная и доп. информация
-    bcast_main_info.postMessage(panelState.mainInfo || "");
-    bcast_game_info.postMessage(panelState.gameNumber || "");
-    // 4. Overlay переключатели (чекбоксы)
-    bcast_overlay_settings.postMessage(panelState.overlay);
-    // 5. Остальное — по необходимости (highlight, game_phase и т.д.)
-    // bcast_panel_status.postMessage(...) если нужно
-    // bcast_game_phase.postMessage(...) если нужно
-}
+const nicknameList = [
+    "AMOR", "Asia", "Alien", "Alinellas", "Animag", "Bittir", "Black", "Black Jack", "DULASHA", "Dill",
+    "Dizi", "Dushman", "EL", "Fox", "Gremlin", "Geralt", "Gestalter", "Hisoka", "Ivory", "Kai",
+    "LIRICA", "Miamore", "Mulan", "Neo", "ProDoc", "Shinobi", "Soza", "Saul Goodman", "Scorpion",
+    "TONI MONTANA", "Tam", "ZONDR", "evil", "finnick", "Йору", "Адвокат", "Альтман", "Альфа", "Асур",
+    "Бес", "Биполярка", "Булочка", "Валькирия", "Великая", "228Данте69", "Даня", "Дита", "Добрый",
+    "Дэва", "Ева", "Завклубом", "Зайка", "Зара", "Знаток", "Зёма", "Кари", "Кир", "Кира", "Кобра",
+    "Кову", "Копибара", "Коссмос", "Красавчик", "Лазер", "Лестер", "Лимонная долька", "Белый склон",
+    "Луи", "Мрак", "Маркетолог", "Марсело", "Мау", "Мафия", "Минахор", "Нафиля", "Окси", "Пантера",
+    "Паранойа", "Подкова", "Подсолнух", "Психолог", "Рокфор", "Руди", "Скорпион", "Саид", "Саймон",
+    "Салливан", "Сатору", "Светлячек", "Сирена", "Смурфик", "Статистика", "Темир", "Типсон",
+    "Томас Шелби", "Учитель", "Феникс", "Физик", "Фил", "Хейтер", "Штиль", "Элис"
+];
 
 function createPlayerRows(num) {
-    playerTable = document.getElementById('player-rows');
-    if (!playerTable) return;
-    playerTable.innerHTML = "";
+    playerTable.innerHTML = '';
     for (let i = 1; i <= num; i++) {
         const row = document.createElement('div');
         row.className = 'player-row player';
@@ -126,19 +49,27 @@ function createPlayerRows(num) {
 }
 
 $(document).ready(function () {
+    createPlayerRows(numPlayers);
     $('.main').hide();
-    getPlayerList(nicknameList);
-
-    $('#fileToLoad').on('change', function () {
-        loadFileAsText();
-    });
+    getPlayerList(Array(numPlayers).fill(""));
+    const welcomeModal = document.getElementById('welcome-modal');
+    if (welcomeModal) {
+        welcomeModal.style.display = 'block';
+        $('#fileToLoad').on('change', function () {
+            welcomeModal.style.display = 'none';
+            $('.main').show();
+        });
+    } else {
+        $('#fileToLoad').on('change', function () {
+            $('.main').show();
+            hideStatusesShowRoles();
+        });
+    }
 });
 
-// --- Ручной ввод никнеймов ---
-$('#manual-entry-btn').on('click', function () {
+$('#manual-entry-btn').on('click', function() {
     $('header').hide();
     $('#manual-entry-panel').show();
-
     let html = '';
     for (let i = 1; i <= numPlayers; i++) {
         html += `
@@ -149,41 +80,24 @@ $('#manual-entry-btn').on('click', function () {
         `;
     }
     $('#manual-players-list').html(html);
-
     $('.manual-nickname-input').autocomplete({
         source: nicknameList,
         minLength: 1
     });
 });
 
-$('#manual-entry-form').on('submit', function (e) {
+$('#manual-entry-form').on('submit', function(e) {
     e.preventDefault();
     let selected = [];
-    $('.manual-nickname-input').each(function () { selected.push($(this).val().trim()); });
-
-    let empty = selected.some(n => !n);
+    $('.manual-nickname-input').each(function(){ selected.push($(this).val().trim()); });
+    let empty = selected.some(n=>!n);
     let dups = (new Set(selected)).size !== selected.length;
     if (empty) { alert('Заполните все поля!'); return; }
     if (dups) { alert('Никнеймы не должны повторяться!'); return; }
-
     let wrong = selected.find(n => !nicknameList.includes(n));
     if (wrong) { alert(`Ник "${wrong}" не найден в списке!`); return; }
-
-    panelState.players = selected;
-    panelState.playerStates = {};
-    for (let i = 1; i <= numPlayers; i++) {
-        panelState.playerStates[`player_${i}`] = {
-            classes: 'player-row player',
-            selected: selected[i - 1]
-        };
-    }
-    createPlayerRows(numPlayers);
     getPlayerList(selected);
-    hideStatusesShowRoles(); // Показываем роли, скрываем статусы
-    sendPanelState(); // <--- ЭТО ГЛАВНОЕ! Передаст всё на overlay
-
     sendAllData();
-
     $('#manual-entry-panel').hide();
     $('.main').show();
 });
@@ -193,23 +107,13 @@ function loadFileAsText() {
     var fileReader = new FileReader();
     fileReader.onload = function (fileLoadedEvent) {
         var textFromFileLoaded = fileLoadedEvent.target.result;
-        const arr = textFromFileLoaded.split(/\r?\n/);
-        panelState.players = arr;
-        panelState.playerStates = {};
-        for (let i = 1; i <= numPlayers; i++) {
-            panelState.playerStates[`player_${i}`] = {
-                classes: 'player-row player',
-                selected: arr[i - 1]
-            };
-        }
-        createPlayerRows(numPlayers);
-        getPlayerList(arr);
-        hideStatusesShowRoles();
-        sendPanelState();
+        getPlayerList(textFromFileLoaded.split('\r\n'));
+        sendAllData();
     };
     fileReader.readAsText(fileToLoad, "UTF-8");
     $('.main').show();
     $('header').hide();
+    hideStatusesShowRoles();
 }
 
 function getPlayerList(playerArray) {
@@ -218,7 +122,9 @@ function getPlayerList(playerArray) {
         playerArray.forEach(player => {
             element.add(new Option(player.trim()));
         });
-        $(element).children('option').eq(index).attr('selected', 'selected');
+        if (playerArray[index]) {
+            $(element).children('option').eq(index).attr('selected', 'selected');
+        }
     });
 }
 
@@ -239,10 +145,7 @@ function changeStatus(object, status) {
             showBestMoveModal(element.id);
         }
     }
-    if (panelState.playerStates[element.id]) {
-        panelState.playerStates[element.id].classes = element.className;
-    }
-    sendPanelState();
+    cl.postMessage(`${element.id}|${element.classList.value}`);
 }
 
 function changeRole(object, role) {
@@ -253,10 +156,7 @@ function changeRole(object, role) {
         element.classList.remove('don', 'mafia', 'sheriff');
         element.classList.add(role);
     }
-    if (panelState.playerStates[element.id]) {
-        panelState.playerStates[element.id].classes = element.className;
-    }
-    sendPanelState();
+    cl.postMessage(`${element.id}|${element.classList.value}`);
 }
 
 function clearStatus() {
@@ -266,60 +166,47 @@ function clearStatus() {
     document.querySelectorAll('.best-move').forEach(item => {
         item.remove();
     });
-    Object.keys(panelState.playerStates).forEach(id => {
-        panelState.playerStates[id].classes = 'player-row player';
+    document.querySelectorAll('.player').forEach(element => {
+        cl.postMessage(`${element.id}|${element.classList.value}`);
     });
-    sendPanelState();
     isFirstKill = true;
-    console.log("Статусы и ЛХ сброшены");
 }
 
 function clearRole() {
     document.querySelectorAll('.don, .mafia, .sheriff').forEach(item => {
         item.classList.remove('don', 'mafia', 'sheriff');
     });
-    Object.keys(panelState.playerStates).forEach(id => {
-        let c = panelState.playerStates[id].classes.split(' ').filter(cls => cls !== 'don' && cls !== 'mafia' && cls !== 'sheriff');
-        panelState.playerStates[id].classes = c.join(' ');
+    document.querySelectorAll('.player').forEach(element => {
+        cl.postMessage(`${element.id}|${element.classList.value}`);
     });
-    sendPanelState();
 }
 
 $('.player-list-panel').on('change', '.player-select', function () {
-    const id = $(this).parents('.player')[0].id;
-    const value = $(this).find(":selected").val();
-    if (panelState.playerStates[id]) {
-        panelState.playerStates[id].selected = value;
-    }
-    // Сохраняем новый порядок никнеймов
-    const selects = document.querySelectorAll('.player-select');
-    let newPlayers = [];
-    selects.forEach(sel => {
-        newPlayers.push(sel.value);
-    });
-    panelState.players = newPlayers;
-    sendPanelState();
+    const player = `${$(this).parents('.player')[0].id}|${$(this).find(":selected").val()}`;
+    pl.postMessage(player);
 });
 
 function sendAllData() {
     document.querySelectorAll('.player').forEach(element => {
         const item = element.querySelector('.player-select');
         const player = `${element.id}|${$(item[item.selectedIndex]).text()}`;
+        pl.postMessage(player);
     });
-    console.log("Данные игроков отправлены.");
 }
 
 $('#main-info-input').on('input', function () {
-    panelState.mainInfo = $(this).val();
-    sendPanelState();
+    const mainInfo = $(this).val();
+    mi.postMessage(mainInfo);
 });
 
 $('#game-number-input').on('input', function () {
-    panelState.gameNumber = $(this).val();
-    sendPanelState();
+    const gameNumber = $(this).val();
+    gi.postMessage(gameNumber);
 });
 
-function highlightSpeaker(playerNumber) {}
+function highlightSpeaker(playerNumber) {
+    ps.postMessage(`highlight|player_${playerNumber}`);
+}
 
 function showBestMoveModal(playerId) {
     const modal = document.getElementById('best-move-modal');
@@ -333,11 +220,8 @@ function showBestMoveModal(playerId) {
     const saveBtn = modal.querySelector('#save-best-move');
     saveBtn.onclick = function () {
         if (selectedNumbers.length === 3) {
-            // Сохраняем ЛХ в state для overlay (и для BroadcastChannel)
-            const numbers = [...selectedNumbers];
-            if (!panelState.playerStates[playerId]) panelState.playerStates[playerId] = { classes: 'player-row player', selected: "" };
-            panelState.playerStates[playerId].bestMove = numbers;
-            sendPanelState();
+            const bestMove = selectedNumbers.join('');
+            cl.postMessage(`${playerId}|${document.getElementById(playerId).classList.value}|best-move|${bestMove}`);
             modal.style.display = 'none';
             selectedNumbers = [];
             document.querySelectorAll('.number-button').forEach(button => button.classList.remove('selected-number'));
@@ -391,36 +275,16 @@ $(function () {
     hideStatusesShowRoles();
 });
 
-// Overlay switches
 function sendOverlaySettings() {
-    panelState.overlay = {
+    overlaySettings.postMessage({
         hidePlayers: document.getElementById('toggle-hide-players').checked,
         showMainInfo: document.getElementById('toggle-main-info').checked,
         showAdditionalInfo: document.getElementById('toggle-additional-info').checked,
         showStatusPanel: document.getElementById('toggle-status-panel').checked,
-        blur: document.getElementById('toggle-blur').checked
-    };
-    sendPanelState();
+        blur: document.getElementById('toggle-blur').checked,
+    });
 }
 $(function() {
     $('.overlay-toggles input[type="checkbox"]').on('change', sendOverlaySettings);
     sendOverlaySettings();
-});
-
-$('#reset-panel-btn').on('click', function() {
-    panelState = {
-        players: [],
-        playerStates: {},
-        mainInfo: "",
-        gameNumber: "",
-        overlay: {
-            hidePlayers: false,
-            showMainInfo: true,
-            showAdditionalInfo: true,
-            showStatusPanel: true,
-            blur: false
-        }
-    };
-    sendPanelState();
-    applyPanelState();
 });
