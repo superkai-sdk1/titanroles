@@ -15,7 +15,7 @@ let panelState = {
 };
 
 const numPlayers = 10;
-const playerTable = document.getElementById('player-rows');
+let playerTable; // теперь не получаем сразу!
 let isFirstKill = true;
 
 // ====== SYNC ======
@@ -58,6 +58,9 @@ function applyPanelState() {
 }
 
 function createPlayerRows(num) {
+    playerTable = document.getElementById('player-rows'); // получаем всегда актуальный
+    if (!playerTable) return;
+    playerTable.innerHTML = ""; // очищаем, иначе будет дублирование
     for (let i = 1; i <= num; i++) {
         const row = document.createElement('div');
         row.className = 'player-row player';
@@ -83,17 +86,17 @@ function createPlayerRows(num) {
 }
 
 $(document).ready(function () {
-    createPlayerRows(numPlayers);
-    $('.main').hide();
+    $('.main').hide(); // Скрываем панель по умолчанию
+    // Не вызываем createPlayerRows сразу, только после загрузки рассадки!
     getPlayerList(nicknameList);
+
     $('#fileToLoad').on('change', function () {
-        $('.main').show();
-        hideStatusesShowRoles();
+        loadFileAsText();
     });
 });
 
 // --- Ручной ввод никнеймов ---
-$('#manual-entry-btn').on('click', function() {
+$('#manual-entry-btn').on('click', function () {
     $('header').hide();
     $('#manual-entry-panel').show();
 
@@ -114,12 +117,12 @@ $('#manual-entry-btn').on('click', function() {
     });
 });
 
-$('#manual-entry-form').on('submit', function(e) {
+$('#manual-entry-form').on('submit', function (e) {
     e.preventDefault();
     let selected = [];
-    $('.manual-nickname-input').each(function(){ selected.push($(this).val().trim()); });
+    $('.manual-nickname-input').each(function () { selected.push($(this).val().trim()); });
 
-    let empty = selected.some(n=>!n);
+    let empty = selected.some(n => !n);
     let dups = (new Set(selected)).size !== selected.length;
     if (empty) { alert('Заполните все поля!'); return; }
     if (dups) { alert('Никнеймы не должны повторяться!'); return; }
@@ -132,9 +135,10 @@ $('#manual-entry-form').on('submit', function(e) {
     for (let i = 1; i <= numPlayers; i++) {
         panelState.playerStates[`player_${i}`] = {
             classes: 'player-row player',
-            selected: selected[i-1]
+            selected: selected[i - 1]
         };
     }
+    createPlayerRows(numPlayers); // генерируем строки
     sendPanelState();
 
     getPlayerList(selected);
@@ -149,15 +153,16 @@ function loadFileAsText() {
     var fileReader = new FileReader();
     fileReader.onload = function (fileLoadedEvent) {
         var textFromFileLoaded = fileLoadedEvent.target.result;
-        const arr = textFromFileLoaded.split('\r\n');
+        const arr = textFromFileLoaded.split(/\r?\n/); // поддержка и \n, и \r\n
         panelState.players = arr;
         panelState.playerStates = {};
         for (let i = 1; i <= numPlayers; i++) {
             panelState.playerStates[`player_${i}`] = {
                 classes: 'player-row player',
-                selected: arr[i-1]
+                selected: arr[i - 1]
             };
         }
+        createPlayerRows(numPlayers); // генерируем строки
         sendPanelState();
         getPlayerList(arr);
     };
