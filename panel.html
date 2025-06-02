@@ -6,11 +6,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Manrope:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <!-- Supabase, jQuery, jQuery UI, QRious -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script src="https://unpkg.com/qrious/dist/qrious.min.js"></script>
+    <script src="ws-sync.js"></script>
+    <script src="script.js"></script>
 </head>
 <body>
 <header class="m3e-header">
@@ -110,7 +110,6 @@
         <button id="save-best-move" class="m3e-btn m3e-btn-main">Сохранить</button>
     </div>
 </div>
-<script src="script.js"></script>
 <script>
 $(function(){
     const panelUrl = window.location.href.split('#')[0];
