@@ -1,4 +1,4 @@
-// script.js — версия только через WebSocket, без Supabase
+// script.js — версия панели с WebSocket синхронизацией и отправкой данных на overlay через BroadcastChannel
 
 let panelState = {
     players: [],
@@ -15,7 +15,7 @@ let panelState = {
 };
 
 const numPlayers = 10;
-let playerTable; // теперь не получаем сразу!
+let playerTable;
 let isFirstKill = true;
 
 // ====== SYNC ======
@@ -27,7 +27,8 @@ connectWS(function (state) {
 });
 
 function sendPanelState() {
-    sendState(panelState);
+    sendState(panelState);       // WebSocket для других панелей/устройств
+    broadcastToOverlay();        // BroadcastChannel для overlay.html
 }
 
 // ===================
@@ -57,10 +58,45 @@ function applyPanelState() {
     }
 }
 
+// --- BROADCAST TO OVERLAY ---
+const bcast_player_list = new BroadcastChannel('player_list');
+const bcast_class_list  = new BroadcastChannel('class_list');
+const bcast_main_info   = new BroadcastChannel('main_info');
+const bcast_game_info   = new BroadcastChannel('game_info');
+const bcast_panel_status = new BroadcastChannel('panel_status');
+const bcast_game_phase = new BroadcastChannel('game_phase'); // если потребуется
+
+function broadcastToOverlay() {
+    // 1. Никнеймы и фото
+    if (panelState.players && panelState.players.length === numPlayers) {
+        for (let i = 1; i <= numPlayers; i++) {
+            const nick = panelState.players[i - 1];
+            bcast_player_list.postMessage(`player_${i}|${nick}`);
+        }
+    }
+    // 2. Классы, роли, best-move
+    if (panelState.playerStates) {
+        Object.entries(panelState.playerStates).forEach(([id, data]) => {
+            let msg = `${id}|${data.classes || 'player-row player'}`;
+            // Если есть best-move — добавим
+            if (data.bestMove && Array.isArray(data.bestMove) && data.bestMove.length) {
+                msg += `|best-move|${data.bestMove.join(' ')}`;
+            }
+            bcast_class_list.postMessage(msg);
+        });
+    }
+    // 3. Основная и доп. информация
+    bcast_main_info.postMessage(panelState.mainInfo || "");
+    bcast_game_info.postMessage(panelState.gameNumber || "");
+    // 4. Остальное — по необходимости (highlight, game_phase и т.д.)
+    // bcast_panel_status.postMessage(...) если нужно
+    // bcast_game_phase.postMessage(...) если нужно
+}
+
 function createPlayerRows(num) {
-    playerTable = document.getElementById('player-rows'); // получаем всегда актуальный
+    playerTable = document.getElementById('player-rows');
     if (!playerTable) return;
-    playerTable.innerHTML = ""; // очищаем, иначе будет дублирование
+    playerTable.innerHTML = "";
     for (let i = 1; i <= num; i++) {
         const row = document.createElement('div');
         row.className = 'player-row player';
@@ -86,8 +122,7 @@ function createPlayerRows(num) {
 }
 
 $(document).ready(function () {
-    $('.main').hide(); // Скрываем панель по умолчанию
-    // Не вызываем createPlayerRows сразу, только после загрузки рассадки!
+    $('.main').hide();
     getPlayerList(nicknameList);
 
     $('#fileToLoad').on('change', function () {
@@ -138,7 +173,7 @@ $('#manual-entry-form').on('submit', function (e) {
             selected: selected[i - 1]
         };
     }
-    createPlayerRows(numPlayers); // генерируем строки
+    createPlayerRows(numPlayers);
     sendPanelState();
 
     getPlayerList(selected);
@@ -153,7 +188,7 @@ function loadFileAsText() {
     var fileReader = new FileReader();
     fileReader.onload = function (fileLoadedEvent) {
         var textFromFileLoaded = fileLoadedEvent.target.result;
-        const arr = textFromFileLoaded.split(/\r?\n/); // поддержка и \n, и \r\n
+        const arr = textFromFileLoaded.split(/\r?\n/);
         panelState.players = arr;
         panelState.playerStates = {};
         for (let i = 1; i <= numPlayers; i++) {
@@ -162,7 +197,7 @@ function loadFileAsText() {
                 selected: arr[i - 1]
             };
         }
-        createPlayerRows(numPlayers); // генерируем строки
+        createPlayerRows(numPlayers);
         sendPanelState();
         getPlayerList(arr);
     };
@@ -286,6 +321,11 @@ function showBestMoveModal(playerId) {
     const saveBtn = modal.querySelector('#save-best-move');
     saveBtn.onclick = function () {
         if (selectedNumbers.length === 3) {
+            // Сохраняем ЛХ в state для overlay (и для BroadcastChannel)
+            const numbers = [...selectedNumbers];
+            if (!panelState.playerStates[playerId]) panelState.playerStates[playerId] = { classes: 'player-row player', selected: "" };
+            panelState.playerStates[playerId].bestMove = numbers;
+            sendPanelState();
             modal.style.display = 'none';
             selectedNumbers = [];
             document.querySelectorAll('.number-button').forEach(button => button.classList.remove('selected-number'));
