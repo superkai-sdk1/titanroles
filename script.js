@@ -4,10 +4,10 @@ const ps = new BroadcastChannel('panel_status');
 const pl = new BroadcastChannel('player_list');
 const cl = new BroadcastChannel('class_list');
 const gi = new BroadcastChannel('game_info');
-const mi = new BroadcastChannel('main_info');
-const overlaySettings = new BroadcastChannel('overlay_settings');
-let isFirstKill = true;
+const mi = new BroadcastChannel('main_info'); // Новый канал для основной информации
+let isFirstKill = true; // Флаг для отслеживания первого убийства
 
+// --- Список никнеймов для ручного ввода ---
 const nicknameList = [
     "AMOR", "Asia", "Alien", "Alinellas", "Animag", "Bittir", "Black", "Black Jack", "DULASHA", "Dill",
     "Dizi", "Dushman", "EL", "Fox", "Gremlin", "Geralt", "Gestalter", "Hisoka", "Ivory", "Kai",
@@ -23,7 +23,6 @@ const nicknameList = [
 ];
 
 function createPlayerRows(num) {
-    playerTable.innerHTML = '';
     for (let i = 1; i <= num; i++) {
         const row = document.createElement('div');
         row.className = 'player-row player';
@@ -51,7 +50,7 @@ function createPlayerRows(num) {
 $(document).ready(function () {
     createPlayerRows(numPlayers);
     $('.main').hide();
-    getPlayerList(Array(numPlayers).fill(""));
+    getPlayerList(player_list);
     const welcomeModal = document.getElementById('welcome-modal');
     if (welcomeModal) {
         welcomeModal.style.display = 'block';
@@ -67,9 +66,12 @@ $(document).ready(function () {
     }
 });
 
+// --- Ручной ввод никнеймов ---
 $('#manual-entry-btn').on('click', function() {
     $('header').hide();
     $('#manual-entry-panel').show();
+
+    // Генерируем 10 полей с автодополнением (autocomplete)
     let html = '';
     for (let i = 1; i <= numPlayers; i++) {
         html += `
@@ -80,24 +82,35 @@ $('#manual-entry-btn').on('click', function() {
         `;
     }
     $('#manual-players-list').html(html);
+
+    // jQuery UI Autocomplete для каждого input
     $('.manual-nickname-input').autocomplete({
         source: nicknameList,
         minLength: 1
     });
 });
 
+// Обработка сохранения ручного ввода
 $('#manual-entry-form').on('submit', function(e) {
     e.preventDefault();
     let selected = [];
     $('.manual-nickname-input').each(function(){ selected.push($(this).val().trim()); });
+
+    // Проверка на пустые и дубликаты
     let empty = selected.some(n=>!n);
     let dups = (new Set(selected)).size !== selected.length;
     if (empty) { alert('Заполните все поля!'); return; }
     if (dups) { alert('Никнеймы не должны повторяться!'); return; }
+
+    // Проверка что все никнеймы из списка (опционально)
     let wrong = selected.find(n => !nicknameList.includes(n));
     if (wrong) { alert(`Ник "${wrong}" не найден в списке!`); return; }
-    getPlayerList(selected);
+
+    getPlayerList(selected); // обновляем селекты
+
+    // --- ВАЖНО! Отправляем никнеймы в overlay для отображения фото ---
     sendAllData();
+
     $('#manual-entry-panel').hide();
     $('.main').show();
 });
@@ -108,7 +121,6 @@ function loadFileAsText() {
     fileReader.onload = function (fileLoadedEvent) {
         var textFromFileLoaded = fileLoadedEvent.target.result;
         getPlayerList(textFromFileLoaded.split('\r\n'));
-        sendAllData();
     };
     fileReader.readAsText(fileToLoad, "UTF-8");
     $('.main').show();
@@ -122,9 +134,7 @@ function getPlayerList(playerArray) {
         playerArray.forEach(player => {
             element.add(new Option(player.trim()));
         });
-        if (playerArray[index]) {
-            $(element).children('option').eq(index).attr('selected', 'selected');
-        }
+        $(element).children('option').eq(index).attr('selected', 'selected');
     });
 }
 
@@ -170,6 +180,7 @@ function clearStatus() {
         cl.postMessage(`${element.id}|${element.classList.value}`);
     });
     isFirstKill = true;
+    console.log("Статусы и ЛХ сброшены");
 }
 
 function clearRole() {
@@ -192,12 +203,15 @@ function sendAllData() {
         const player = `${element.id}|${$(item[item.selectedIndex]).text()}`;
         pl.postMessage(player);
     });
+    console.log("Данные игроков отправлены.");
 }
 
+// --- ДОБАВЛЕНО: Обработка поля основной информации и отфправка через канал ---
 $('#main-info-input').on('input', function () {
     const mainInfo = $(this).val();
     mi.postMessage(mainInfo);
 });
+// ---
 
 $('#game-number-input').on('input', function () {
     const gameNumber = $(this).val();
@@ -275,6 +289,8 @@ $(function () {
     hideStatusesShowRoles();
 });
 
+/* --- Overlay Settings BROADCAST --- */
+const overlaySettings = new BroadcastChannel('overlay_settings');
 function sendOverlaySettings() {
     overlaySettings.postMessage({
         hidePlayers: document.getElementById('toggle-hide-players').checked,
