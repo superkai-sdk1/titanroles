@@ -1,5 +1,3 @@
-// script.js — версия панели с WebSocket синхронизацией и отправкой данных на overlay через BroadcastChannel
-
 let panelState = {
     players: [],
     playerStates: {},
@@ -174,9 +172,10 @@ $('#manual-entry-form').on('submit', function (e) {
         };
     }
     createPlayerRows(numPlayers);
+    getPlayerList(selected);
+    hideStatusesShowRoles(); // Гарантируем: роли видны, статусы скрыты!
     sendPanelState();
 
-    getPlayerList(selected);
     sendAllData();
 
     $('#manual-entry-panel').hide();
@@ -198,13 +197,13 @@ function loadFileAsText() {
             };
         }
         createPlayerRows(numPlayers);
-        sendPanelState();
         getPlayerList(arr);
+        hideStatusesShowRoles(); // Гарантируем: роли видны, статусы скрыты!
+        sendPanelState();
     };
     fileReader.readAsText(fileToLoad, "UTF-8");
     $('.main').show();
     $('header').hide();
-    hideStatusesShowRoles();
 }
 
 function getPlayerList(playerArray) {
