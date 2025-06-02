@@ -1,11 +1,4 @@
-// === SUPABASE INIT ===
-const SUPABASE_URL = "https://axdbxcumaeaoyuyfdpid.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4ZGJ4Y3VtYWVhb3l1eWZkcGlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3OTIwODcsImV4cCI6MjA2NDM2ODA4N30.KmDBIfByq_JRqIVpEdZ-lUgcV5QOOPqKP1GYklfFSu0";
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-const numPlayers = 10;
-const playerTable = document.getElementById('player-rows');
-let isFirstKill = true;
+// script.js — версия только через WebSocket, без Supabase
 
 let panelState = {
     players: [],
@@ -21,47 +14,26 @@ let panelState = {
     }
 };
 
-// Заполни список никнеймов (пример)
-const nicknameList = [/* ... */"Элис"];
+const numPlayers = 10;
+const playerTable = document.getElementById('player-rows');
+let isFirstKill = true;
 
-// ========== SUPABASE SYNC ==========
-async function savePanelStateToSupabase() {
-    await supabase
-        .from('panel_state')
-        .update({ state: panelState })
-        .eq('id', 1);
-}
-async function subscribeToPanelState() {
-    // Получить начальное состояние
-    let { data } = await supabase
-        .from('panel_state')
-        .select('state')
-        .eq('id', 1)
-        .single();
-    if (data && data.state) {
-        panelState = data.state;
+// ====== SYNC ======
+connectWS(function (state) {
+    if (state) {
+        panelState = state;
         applyPanelState();
     }
-    // Подписка на realtime
-    supabase
-        .channel('public:panel_state')
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'panel_state', filter: 'id=eq.1' },
-            payload => {
-                if (payload.new && payload.new.state) {
-                    if (JSON.stringify(payload.new.state) !== JSON.stringify(panelState)) {
-                        panelState = payload.new.state;
-                        applyPanelState();
-                    }
-                }
-            }
-        )
-        .subscribe();
-}
-subscribeToPanelState();
+});
 
-// ====== ПРИМЕНИТЬ СОСТОЯНИЕ ИЗ SUPABASE ======
+function sendPanelState() {
+    sendState(panelState);
+}
+
+// ===================
+
+const nicknameList = [/* ... */"Элис"]; // <-- Подставьте список никнеймов
+
 function applyPanelState() {
     if (panelState.players && panelState.players.length === numPlayers) {
         getPlayerList(panelState.players);
@@ -163,7 +135,7 @@ $('#manual-entry-form').on('submit', function(e) {
             selected: selected[i-1]
         };
     }
-    savePanelStateToSupabase();
+    sendPanelState();
 
     getPlayerList(selected);
     sendAllData();
@@ -186,7 +158,7 @@ function loadFileAsText() {
                 selected: arr[i-1]
             };
         }
-        savePanelStateToSupabase();
+        sendPanelState();
         getPlayerList(arr);
     };
     fileReader.readAsText(fileToLoad, "UTF-8");
@@ -225,7 +197,7 @@ function changeStatus(object, status) {
     if (panelState.playerStates[element.id]) {
         panelState.playerStates[element.id].classes = element.className;
     }
-    savePanelStateToSupabase();
+    sendPanelState();
 }
 
 function changeRole(object, role) {
@@ -239,7 +211,7 @@ function changeRole(object, role) {
     if (panelState.playerStates[element.id]) {
         panelState.playerStates[element.id].classes = element.className;
     }
-    savePanelStateToSupabase();
+    sendPanelState();
 }
 
 function clearStatus() {
@@ -252,7 +224,7 @@ function clearStatus() {
     Object.keys(panelState.playerStates).forEach(id => {
         panelState.playerStates[id].classes = 'player-row player';
     });
-    savePanelStateToSupabase();
+    sendPanelState();
     isFirstKill = true;
     console.log("Статусы и ЛХ сброшены");
 }
@@ -265,7 +237,7 @@ function clearRole() {
         let c = panelState.playerStates[id].classes.split(' ').filter(cls => cls !== 'don' && cls !== 'mafia' && cls !== 'sheriff');
         panelState.playerStates[id].classes = c.join(' ');
     });
-    savePanelStateToSupabase();
+    sendPanelState();
 }
 
 $('.player-list-panel').on('change', '.player-select', function () {
@@ -274,7 +246,7 @@ $('.player-list-panel').on('change', '.player-select', function () {
     if (panelState.playerStates[id]) {
         panelState.playerStates[id].selected = value;
     }
-    savePanelStateToSupabase();
+    sendPanelState();
 });
 
 function sendAllData() {
@@ -287,12 +259,12 @@ function sendAllData() {
 
 $('#main-info-input').on('input', function () {
     panelState.mainInfo = $(this).val();
-    savePanelStateToSupabase();
+    sendPanelState();
 });
 
 $('#game-number-input').on('input', function () {
     panelState.gameNumber = $(this).val();
-    savePanelStateToSupabase();
+    sendPanelState();
 });
 
 function highlightSpeaker(playerNumber) {}
@@ -371,7 +343,7 @@ function sendOverlaySettings() {
         showStatusPanel: document.getElementById('toggle-status-panel').checked,
         blur: document.getElementById('toggle-blur').checked
     };
-    savePanelStateToSupabase();
+    sendPanelState();
 }
 $(function() {
     $('.overlay-toggles input[type="checkbox"]').on('change', sendOverlaySettings);
@@ -392,6 +364,6 @@ $('#reset-panel-btn').on('click', function() {
             blur: false
         }
     };
-    savePanelStateToSupabase();
+    sendPanelState();
     applyPanelState();
 });
