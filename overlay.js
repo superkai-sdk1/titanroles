@@ -4,7 +4,7 @@ const cl = new BroadcastChannel('class_list');
 const gi = new BroadcastChannel('game_info');
 const gp = new BroadcastChannel('game_phase');
 const mi = new BroadcastChannel('main_info');
-const bcast_overlay_settings = new BroadcastChannel('overlay_settings'); // Добавлено для overlay settings
+const overlaySettings = new BroadcastChannel('overlay_settings');
 
 const killedPlayers = [];
 const votedPlayers = [];
@@ -14,6 +14,7 @@ $(document).ready(function () {
 });
 let killedOrder = [];
 let votedOrder = [];
+
 pl.onmessage = (event) => {
     const player_list = event.data.split('|');
     document.getElementById(player_list[0]).querySelectorAll('.nick')[0].innerHTML = player_list[1];
@@ -25,32 +26,25 @@ cl.onmessage = (event) => {
     const playerId = class_list[0];
     const playerClasses = class_list[1].split(' ');
 
-    // Обновление классов игрока
     document.getElementById(playerId).setAttribute('class', class_list[1]);
-
-    // Обновление порядка нажатий для killed, voted и deleted
     const statusElement = document.getElementById(playerId).querySelector('.status');
     if (playerClasses.includes('killed')) {
         if (!killedOrder.includes(playerId)) {
             killedOrder.push(playerId);
         }
-        // Добавляем надпись "УБИТ"
         statusElement.innerText = "УБИТ";
         statusElement.style.visibility = "visible";
     } else {
         killedOrder = killedOrder.filter(id => id !== playerId);
-        // Убираем надпись "УБИТ"
         if (statusElement.innerText === "УБИТ") {
             statusElement.innerText = "";
             statusElement.style.visibility = "hidden";
         }
     }
-
     if (playerClasses.includes('voted')) {
         if (!votedOrder.includes(playerId)) {
             votedOrder.push(playerId);
         }
-        // Добавляем надпись "ЗАГОЛОСОВАН"
         statusElement.innerText = "ЗАГОЛОСОВАН";
         statusElement.style.visibility = "visible";
     } else {
@@ -60,13 +54,10 @@ cl.onmessage = (event) => {
             statusElement.style.visibility = "hidden";
         }
     }
-
     if (playerClasses.includes('deleted')) {
-        // Добавляем надпись "УДАЛЕН"
         statusElement.innerText = "УДАЛЕН";
         statusElement.style.visibility = "visible";
     } else {
-        // Убираем надпись "УДАЛЕН"
         if (statusElement.innerText === "УДАЛЕН") {
             statusElement.innerText = "";
             statusElement.style.visibility = "hidden";
@@ -89,10 +80,9 @@ cl.onmessage = (event) => {
         bestMove.forEach(num => {
             const numElement = document.createElement('div');
             numElement.className = 'best-move-number';
-            numElement.textContent = num; // Убираем надпись "ЛХ"
+            numElement.textContent = num;
             bestMoveElement.appendChild(numElement);
         });
-
         playerElement.appendChild(bestMoveElement);
     }
     if (class_list[2] === 'remove-best-move') {
@@ -139,12 +129,10 @@ gi.onmessage = (event) => {
     document.getElementById('game-info').innerText = event.data;
 };
 
-// --- ДОБАВЛЕНО: Обработка основной информации ---
 mi.onmessage = (event) => {
     const mainInfoBlock = document.getElementById('main-info');
     if (mainInfoBlock) mainInfoBlock.innerText = event.data;
 };
-// -----------------------------------------------
 
 gp.onmessage = (event) => {
     const phasePanel = document.getElementById('game-phase-panel');
@@ -153,42 +141,6 @@ gp.onmessage = (event) => {
     setTimeout(() => phasePanel.classList.remove('animate-phase'), 1000);
 };
 
-// --- НОВОЕ: Обработка overlay_settings ---
-bcast_overlay_settings.onmessage = (event) => {
+overlaySettings.onmessage = (event) => {
     setOverlayState(event.data);
 };
-
-// --- Функция применения overlay switches (используется overlay.html, но на всякий случай дублируем) ---
-function setOverlayState(overlay) {
-    if (!overlay) return;
-    // Скрыть игроков
-    let footer = document.getElementById('footer-players');
-    if (footer) footer.style.display = overlay.hidePlayers ? 'none' : '';
-    // Основная инфа
-    let mainInfoBlock = document.getElementById('main-info');
-    if (mainInfoBlock) mainInfoBlock.style.display = overlay.showMainInfo ? '' : 'none';
-    // Доп. инфа
-    let overlayHeader = document.getElementById('overlay-header');
-    if (overlayHeader) overlayHeader.style.display = overlay.showAdditionalInfo ? '' : 'none';
-    // Статус-панель
-    let statusPanel = document.getElementById('status-panel');
-    if (statusPanel) statusPanel.style.display = overlay.showStatusPanel ? '' : 'none';
-    // Блюр
-    let blurDiv = document.getElementById('overlay-blur-el');
-    if (blurDiv) {
-        if (overlay.blur) {
-            blurDiv.classList.add('active');
-            document.body.classList.add('overlay-blur-bg');
-        } else {
-            blurDiv.classList.remove('active');
-            document.body.classList.remove('overlay-blur-bg');
-        }
-        blurDiv.style.position = 'fixed';
-        blurDiv.style.top = 0;
-        blurDiv.style.left = 0;
-        blurDiv.style.width = '100vw';
-        blurDiv.style.height = '100vh';
-        blurDiv.style.zIndex = 9998;
-        blurDiv.style.pointerEvents = 'none';
-    }
-}
