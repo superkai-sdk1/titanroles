@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Папка проекта
 PROJECT_DIR="/var/www/titanroles"
 BRANCH="main"
 
@@ -14,7 +13,6 @@ echo "Устанавливаем зависимости (на всякий сл�
 npm install
 
 echo "Перезапускаем node-сервер..."
-# Если используешь pm2 — замени на pm2 restart server.js
 if command -v pm2 &> /dev/null; then
     pm2 restart server.js
 else
