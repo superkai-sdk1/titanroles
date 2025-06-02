@@ -23,6 +23,7 @@ connectWS(function (state) {
     if (state) {
         panelState = state;
         applyPanelState();
+        broadcastToOverlay(); // При восстановлении панели тоже обновить overlay
     }
 });
 
@@ -178,8 +179,8 @@ $('#manual-entry-form').on('submit', function (e) {
     }
     createPlayerRows(numPlayers);
     getPlayerList(selected);
-    hideStatusesShowRoles(); // Гарантируем: роли видны, статусы скрыты!
-    sendPanelState();
+    hideStatusesShowRoles(); // Показываем роли, скрываем статусы
+    sendPanelState(); // <--- ЭТО ГЛАВНОЕ! Передаст всё на overlay
 
     sendAllData();
 
@@ -203,7 +204,7 @@ function loadFileAsText() {
         }
         createPlayerRows(numPlayers);
         getPlayerList(arr);
-        hideStatusesShowRoles(); // Гарантируем: роли видны, статусы скрыты!
+        hideStatusesShowRoles();
         sendPanelState();
     };
     fileReader.readAsText(fileToLoad, "UTF-8");
@@ -290,6 +291,13 @@ $('.player-list-panel').on('change', '.player-select', function () {
     if (panelState.playerStates[id]) {
         panelState.playerStates[id].selected = value;
     }
+    // Сохраняем новый порядок никнеймов
+    const selects = document.querySelectorAll('.player-select');
+    let newPlayers = [];
+    selects.forEach(sel => {
+        newPlayers.push(sel.value);
+    });
+    panelState.players = newPlayers;
     sendPanelState();
 });
 
