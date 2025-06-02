@@ -2,11 +2,10 @@
 <html lang="ru">
 <head>
     <meta charset="utf-8">
-    <title>TitanRoles — Панель управления</title>
+    <title>Игра — Overlay</title>
     <link rel="stylesheet" href="overlay.css">
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrious/dist/qrious.min.js"></script>
 </head>
 <body class="visible">
 <!-- Блок слева: Дополнительная информация -->
@@ -108,48 +107,71 @@
     </div>
 </footer>
 
-<!-- Сессия и QR-код -->
-<div style="position:fixed; top:20px; right:20px; background:#222; color:#fff; padding:15px; border-radius:10px; z-index:9999;">
-    <div>
-        Код вашей сессии: <b id="sessionId"></b>
-        <button id="copySessionId" style="margin-left:10px;">Скопировать</button>
-    </div>
-    <div style="margin-top:10px; text-align:center;">
-        <canvas id="qr"></canvas>
-        <div style="font-size: 0.9em; margin-top:3px;">Сканируйте QR-код на телефоне для входа</div>
-    </div>
-</div>
-
 <script>
-    // Генерация/получение sessionId
-    let sessionId = localStorage.getItem('sessionId');
-    if (!sessionId) {
-        sessionId = Math.random().toString(36).substring(2,10);
-        localStorage.setItem('sessionId', sessionId);
-    }
-    document.getElementById('sessionId').textContent = sessionId;
-
-    // Кнопка копирования sessionId
-    document.getElementById('copySessionId').onclick = () => {
-        navigator.clipboard.writeText(sessionId).then(() => {
-            alert('Код сессии скопирован!');
+    // 1. Функция определения sessionId автоматически (ищет ид в соседней вкладке или localStorage)
+    function findSessionId() {
+        // 1.1. Если hash в url (например, overlay.html#abc123)
+        if (location.hash && location.hash.length > 1) {
+            return location.hash.substring(1);
+        }
+        // 1.2. Если есть sessionId в localStorage (панель уже была открыта)
+        if (localStorage.getItem('sessionId')) {
+            return localStorage.getItem('sessionId');
+        }
+        // 1.3. Автоматический обмен сессией через BroadcastChannel (панель открыта в соседней вкладке)
+        return new Promise(resolve => {
+            const bc = new BroadcastChannel('titanroles_session');
+            bc.postMessage({ type: 'needSessionId' });
+            bc.onmessage = (e) => {
+                if (e.data && e.data.type === 'sessionId') {
+                    resolve(e.data.sessionId);
+                    bc.close();
+                }
+            };
+            // fallback через 2 секунды
+            setTimeout(() => {
+                resolve(null);
+                bc.close();
+            }, 2000);
         });
-    };
+    }
 
-    // Генерация QR-кода для mobile.html#sessionId
-    new QRious({
-        element: document.getElementById('qr'),
-        size: 120,
-        value: `${location.origin}/mobile.html#${sessionId}`
-    });
+    // 2. Подключаем socket.io после получения sessionId
+    (async function () {
+        let sessionId = await findSessionId();
+        if (!sessionId) {
+            // Если не удалось найти, попросить пользователя ввести вручную
+            sessionId = prompt('Введите код сессии (sessionId), который отображается на панели управления:');
+        }
+        // Сохраняем для будущих вкладок
+        if (sessionId) {
+            localStorage.setItem('sessionId', sessionId);
+        }
+        window.overlaySessionId = sessionId; // для overlay.js
+        const socket = io();
+        socket.emit('joinSession', sessionId);
 
-    // Подключение к socket.io
-    const socket = io();
-    socket.emit('joinSession', sessionId);
-    // Здесь дальше будет логика синхронизации, например: socket.emit('panelEvent', ...);
-    // Всё, что связано с overlaySettings перенесено в overlay.js
+        // Подписка на panelEvent (сюда будет прилетать обновление overlay)
+        socket.on('panelEvent', (event) => {
+            if (window.handlePanelEvent) {
+                window.handlePanelEvent(event); // обработчик определён в overlay.js
+            }
+        });
+
+        // Пример: overlay может отправлять события обратно (если потребуется)
+        window.sendOverlayEvent = (event) => {
+            socket.emit('overlayEvent', { sessionId, event });
+        };
+
+        // Для совместимости: если кто-то в соседней вкладке попросит sessionId — отвечаем!
+        const bc = new BroadcastChannel('titanroles_session');
+        bc.onmessage = (e) => {
+            if (e.data && e.data.type === 'needSessionId' && sessionId) {
+                bc.postMessage({ type: 'sessionId', sessionId });
+            }
+        };
+    })();
 </script>
-<script src="script.js"></script>
 <script src="overlay.js"></script>
 </body>
 </html>
