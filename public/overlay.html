@@ -1,10 +1,12 @@
-﻿﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="utf-8">
-    <title>Игра</title>
+    <title>TitanRoles — Панель управления</title>
     <link rel="stylesheet" href="overlay.css">
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrious/dist/qrious.min.js"></script>
 </head>
 <body class="visible">
 <!-- Блок слева: Дополнительная информация -->
@@ -105,46 +107,49 @@
         <div class="nick"></div>
     </div>
 </footer>
-<script src="overlay.js"></script>
+
+<!-- Сессия и QR-код -->
+<div style="position:fixed; top:20px; right:20px; background:#222; color:#fff; padding:15px; border-radius:10px; z-index:9999;">
+    <div>
+        Код вашей сессии: <b id="sessionId"></b>
+        <button id="copySessionId" style="margin-left:10px;">Скопировать</button>
+    </div>
+    <div style="margin-top:10px; text-align:center;">
+        <canvas id="qr"></canvas>
+        <div style="font-size: 0.9em; margin-top:3px;">Сканируйте QR-код на телефоне для входа</div>
+    </div>
+</div>
+
 <script>
-    // Overlay settings
-    const overlaySettings = new BroadcastChannel('overlay_settings');
-    function setOverlayState(settings) {
-        // Игроки
-        document.getElementById('footer-players').style.display = settings.hidePlayers ? 'none' : '';
-        // Основная информация
-        document.getElementById('main-info').style.display = settings.showMainInfo ? '' : 'none';
-        // Дополнительная информация
-        document.getElementById('overlay-header').style.display = settings.showAdditionalInfo ? '' : 'none';
-        // Порядок ухода (статус-панель)
-        document.getElementById('status-panel').style.display = settings.showStatusPanel ? '' : 'none';
-        // Блюр
-        const blurDiv = document.getElementById('overlay-blur-el');
-        if (settings.blur) {
-            blurDiv.classList.add('active');
-            document.body.classList.add('overlay-blur-bg');
-        } else {
-            blurDiv.classList.remove('active');
-            document.body.classList.remove('overlay-blur-bg');
-        }
-        // Блюр должен быть поверх всего, кроме диалогов (ставим в конец body), но не мешать кликам (pointer-events: none).
-        blurDiv.style.position = 'fixed';
-        blurDiv.style.top = 0;
-        blurDiv.style.left = 0;
-        blurDiv.style.width = '100vw';
-        blurDiv.style.height = '100vh';
-        blurDiv.style.zIndex = 9998;
-        blurDiv.style.pointerEvents = 'none';
+    // Генерация/получение sessionId
+    let sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+        sessionId = Math.random().toString(36).substring(2,10);
+        localStorage.setItem('sessionId', sessionId);
     }
-    overlaySettings.onmessage = (e) => setOverlayState(e.data);
-    // Стартовые значения (если панель еще не была открыта)
-    setOverlayState({
-        hidePlayers: false,
-        showMainInfo: true,
-        showAdditionalInfo: true,
-        showStatusPanel: true,
-        blur: false,
+    document.getElementById('sessionId').textContent = sessionId;
+
+    // Кнопка копирования sessionId
+    document.getElementById('copySessionId').onclick = () => {
+        navigator.clipboard.writeText(sessionId).then(() => {
+            alert('Код сессии скопирован!');
+        });
+    };
+
+    // Генерация QR-кода для mobile.html#sessionId
+    new QRious({
+        element: document.getElementById('qr'),
+        size: 120,
+        value: `${location.origin}/mobile.html#${sessionId}`
     });
+
+    // Подключение к socket.io
+    const socket = io();
+    socket.emit('joinSession', sessionId);
+    // Здесь дальше будет логика синхронизации, например: socket.emit('panelEvent', ...);
+    // Всё, что связано с overlaySettings перенесено в overlay.js
 </script>
+<script src="script.js"></script>
+<script src="overlay.js"></script>
 </body>
 </html>
