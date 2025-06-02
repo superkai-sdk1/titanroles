@@ -1,154 +1,132 @@
-const ps = new BroadcastChannel('panel_status');
-const pl = new BroadcastChannel('player_list');
-const cl = new BroadcastChannel('class_list');
-const gi = new BroadcastChannel('game_info');
-const gp = new BroadcastChannel('game_phase');
-const mi = new BroadcastChannel('main_info'); // Добавляем канал для основной информации
+// overlay.js — overlay теперь полностью работает через WebSocket (ws-sync.js)
 
-const killedPlayers = [];
-const votedPlayers = [];
+function applyOverlayState(state) {
+    if (!state) return;
 
-$(document).ready(function () {
-    var element = document.getElementsByTagName("body")[0];
-});
-let killedOrder = [];
-let votedOrder = [];
-pl.onmessage = (event) => {
-    const player_list = event.data.split('|');
-    document.getElementById(player_list[0]).querySelectorAll('.nick')[0].innerHTML = player_list[1];
-    document.getElementById(player_list[0]).querySelectorAll('.photo')[0].style.backgroundImage = 'url("content/photo/' + player_list[1] + '.png")';
-};
-
-cl.onmessage = (event) => {
-    const class_list = event.data.split('|');
-    const playerId = class_list[0];
-    const playerClasses = class_list[1].split(' ');
-
-    // Обновление классов игрока
-    document.getElementById(playerId).setAttribute('class', class_list[1]);
-
-    // Обновление порядка нажатий для killed, voted и deleted
-    const statusElement = document.getElementById(playerId).querySelector('.status');
-    if (playerClasses.includes('killed')) {
-        if (!killedOrder.includes(playerId)) {
-            killedOrder.push(playerId);
-        }
-        // Добавляем надпись "УБИТ"
-        statusElement.innerText = "УБИТ";
-        statusElement.style.visibility = "visible";
-    } else {
-        killedOrder = killedOrder.filter(id => id !== playerId);
-        // Убираем надпись "УБИТ"
-        if (statusElement.innerText === "УБИТ") {
-            statusElement.innerText = "";
-            statusElement.style.visibility = "hidden";
-        }
-    }
-
-    if (playerClasses.includes('voted')) {
-        if (!votedOrder.includes(playerId)) {
-            votedOrder.push(playerId);
-        }
-        // Добавляем надпись "ЗАГОЛОСОВАН"
-        statusElement.innerText = "ЗАГОЛОСОВАН";
-        statusElement.style.visibility = "visible";
-    } else {
-        votedOrder = votedOrder.filter(id => id !== playerId);
-        if (statusElement.innerText === "ЗАГОЛОСОВАН") {
-            statusElement.innerText = "";
-            statusElement.style.visibility = "hidden";
-        }
-    }
-
-    if (playerClasses.includes('deleted')) {
-        // Добавляем надпись "УДАЛЕН"
-        statusElement.innerText = "УДАЛЕН";
-        statusElement.style.visibility = "visible";
-    } else {
-        // Убираем надпись "УДАЛЕН"
-        if (statusElement.innerText === "УДАЛЕН") {
-            statusElement.innerText = "";
-            statusElement.style.visibility = "hidden";
-        }
-    }
-    updateStatusOrder();
-    if (class_list[2] === 'best-move') {
-        const bestMove = class_list[3].match(/10|[1-9]/g);
-        const playerElement = document.getElementById(playerId);
-        const oldBestMoveElement = playerElement.querySelector('.best-move');
-        if (oldBestMoveElement) {
-            oldBestMoveElement.remove();
-        }
-        const bestMoveElement = document.createElement('div');
-        bestMoveElement.className = 'best-move';
-        const bestMoveLabel = document.createElement('div');
-        bestMoveLabel.className = 'best-move-label';
-        bestMoveLabel.textContent = 'ЛХ';
-        bestMoveElement.appendChild(bestMoveLabel);
-        bestMove.forEach(num => {
-            const numElement = document.createElement('div');
-            numElement.className = 'best-move-number';
-            numElement.textContent = num; // Убираем надпись "ЛХ"
-            bestMoveElement.appendChild(numElement);
+    // --- Никнеймы, фото ---
+    if (state.players && Array.isArray(state.players)) {
+        state.players.forEach((nick, i) => {
+            let id = 'player_' + (i + 1);
+            let player = document.getElementById(id);
+            if (player) {
+                let nickDiv = player.querySelector('.nick');
+                if (nickDiv) nickDiv.textContent = nick;
+                let photo = player.querySelector('.photo');
+                if (photo) photo.style.backgroundImage = 'url("content/photo/' + nick + '.png")';
+            }
         });
-
-        playerElement.appendChild(bestMoveElement);
     }
-    if (class_list[2] === 'remove-best-move') {
-        const playerElement = document.getElementById(playerId);
-        const bestMoveElement = playerElement.querySelector('.best-move');
-        if (bestMoveElement) {
-            bestMoveElement.remove();
+
+    // --- Классы, роли, статусы игроков ---
+    let killedOrder = [];
+    let votedOrder = [];
+    if (state.playerStates) {
+        Object.entries(state.playerStates).forEach(([id, data]) => {
+            let el = document.getElementById(id);
+            if (!el) return;
+            el.className = data.classes || 'player-row player';
+
+            // Обновление порядка killed/voted
+            if (el.classList.contains('killed')) killedOrder.push(id);
+            if (el.classList.contains('voted')) votedOrder.push(id);
+
+            // Статус-блок
+            let statusDiv = el.querySelector('.status');
+            if (statusDiv) {
+                if (el.classList.contains('killed')) {
+                    statusDiv.innerText = "УБИТ";
+                    statusDiv.style.visibility = "visible";
+                } else if (el.classList.contains('voted')) {
+                    statusDiv.innerText = "ЗАГОЛОСОВАН";
+                    statusDiv.style.visibility = "visible";
+                } else if (el.classList.contains('deleted')) {
+                    statusDiv.innerText = "УДАЛЕН";
+                    statusDiv.style.visibility = "visible";
+                } else {
+                    statusDiv.innerText = "";
+                    statusDiv.style.visibility = "hidden";
+                }
+            }
+
+            // ЛХ (best-move)
+            // удаляем старый
+            let oldBM = el.querySelector('.best-move');
+            if (oldBM) oldBM.remove();
+            if (data.bestMove && Array.isArray(data.bestMove) && data.bestMove.length) {
+                let bestMoveElement = document.createElement('div');
+                bestMoveElement.className = 'best-move';
+                let bestMoveLabel = document.createElement('div');
+                bestMoveLabel.className = 'best-move-label';
+                bestMoveLabel.textContent = 'ЛХ';
+                bestMoveElement.appendChild(bestMoveLabel);
+                data.bestMove.forEach(num => {
+                    const numElement = document.createElement('div');
+                    numElement.className = 'best-move-number';
+                    numElement.textContent = num;
+                    bestMoveElement.appendChild(numElement);
+                });
+                el.appendChild(bestMoveElement);
+            }
+        });
+    }
+
+    // --- Порядок ухода (панель справа) ---
+    let killedPlayersElement = document.getElementById('killed-players');
+    let votedPlayersElement = document.getElementById('voted-players');
+    if (killedPlayersElement) killedPlayersElement.textContent = killedOrder.map(id => id.replace('player_', '')).join(', ');
+    if (votedPlayersElement) votedPlayersElement.textContent = votedOrder.map(id => id.replace('player_', '')).join(', ');
+
+    // --- Основная/доп. информация ---
+    if ('mainInfo' in state) {
+        let mainInfoBlock = document.getElementById('main-info');
+        if (mainInfoBlock) mainInfoBlock.innerText = state.mainInfo;
+    }
+    if ('gameNumber' in state) {
+        let gameInfoBlock = document.getElementById('game-info');
+        if (gameInfoBlock) gameInfoBlock.innerText = state.gameNumber;
+    }
+
+    // --- overlay-переключатели (скрыть игроков, блюр и т.д.) ---
+    if (state.overlay) {
+        // Игроки
+        let footer = document.getElementById('footer-players');
+        if (footer) footer.style.display = state.overlay.hidePlayers ? 'none' : '';
+        // Основная инфа
+        let mainInfoBlock = document.getElementById('main-info');
+        if (mainInfoBlock) mainInfoBlock.style.display = state.overlay.showMainInfo ? '' : 'none';
+        // Доп. инфа
+        let overlayHeader = document.getElementById('overlay-header');
+        if (overlayHeader) overlayHeader.style.display = state.overlay.showAdditionalInfo ? '' : 'none';
+        // Статус-панель
+        let statusPanel = document.getElementById('status-panel');
+        if (statusPanel) statusPanel.style.display = state.overlay.showStatusPanel ? '' : 'none';
+        // Блюр
+        let blurDiv = document.getElementById('overlay-blur-el');
+        if (blurDiv) {
+            if (state.overlay.blur) {
+                blurDiv.classList.add('active');
+                document.body.classList.add('overlay-blur-bg');
+            } else {
+                blurDiv.classList.remove('active');
+                document.body.classList.remove('overlay-blur-bg');
+            }
+            blurDiv.style.position = 'fixed';
+            blurDiv.style.top = 0;
+            blurDiv.style.left = 0;
+            blurDiv.style.width = '100vw';
+            blurDiv.style.height = '100vh';
+            blurDiv.style.zIndex = 9998;
+            blurDiv.style.pointerEvents = 'none';
         }
     }
-};
+}
 
-function updateStatusOrder() {
-    const killedPlayersElement = document.getElementById('killed-players');
-    killedPlayersElement.textContent = killedOrder.map(id => id.replace('player_', '')).join(', ');
-    const votedPlayersElement = document.getElementById('voted-players');
-    votedPlayersElement.textContent = votedOrder.map(id => id.replace('player_', '')).join(', ');
-}
-function updateStatusCounters() {
-    const killedPlayers = document.querySelectorAll('.killed').length;
-    const votedPlayers = document.querySelectorAll('.voted').length;
-    document.getElementById('killed-players').textContent = killedPlayers;
-    document.getElementById('voted-players').textContent = votedPlayers;
-}
-ps.onmessage = (event) => {
-    const [command, elementId] = event.data.split('|');
-    if (command === 'highlight') {
-        const element = document.getElementById(elementId);
-        if (element.classList.contains('highlight')) {
-            element.classList.remove('highlight');
-            element.classList.remove('speaker');
-        } else {
-            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-            document.querySelectorAll('.speaker').forEach(el => el.classList.remove('speaker'));
-            element.classList.add('highlight');
-            element.classList.add('speaker');
-        }
-    } else {
-        const panel_status = event.data.split('|');
-        document.getElementsByTagName(panel_status[0])[0].setAttribute('class', panel_status[1]);
+// ---- Подключение к WebSocket ----
+$(function () {
+    // ws-sync.js должен быть подключён ДО overlay.js
+    if (typeof connectWS !== "function") {
+        console.error("ws-sync.js is missing! Overlay will not update.");
+        return;
     }
-};
-
-gi.onmessage = (event) => {
-    document.getElementById('game-info').innerText = event.data;
-};
-
-// --- ДОБАВЛЕНО: Обработка основной информации ---
-mi.onmessage = (event) => {
-    const mainInfoBlock = document.getElementById('main-info');
-    if (mainInfoBlock) mainInfoBlock.innerText = event.data;
-};
-// -----------------------------------------------
-
-gp.onmessage = (event) => {
-    const phasePanel = document.getElementById('game-phase-panel');
-    phasePanel.innerText = event.data;
-    phasePanel.classList.add('animate-phase');
-    setTimeout(() => phasePanel.classList.remove('animate-phase'), 1000);
-};
-
+    connectWS(applyOverlayState);
+});
