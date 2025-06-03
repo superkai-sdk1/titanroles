@@ -31,6 +31,13 @@
             <canvas id="mobile-menu-qr" width="150" height="150"></canvas>
             <div class="qr-caption">Отсканируйте QR код на телефоне,<br>для управления панелью с телефона</div>
         </div>
+        <div style="margin-top: 20px;">
+            <form id="mobile-roomid-change-form" autocomplete="off">
+                <input id="mobile-roomid-change-input" type="text" maxlength="4" pattern="\d{4}" class="m3e-input" style="font-size:1.2em;text-align:center;width:120px;" placeholder="Ввести номер комнаты" required>
+                <button type="submit" class="m3e-btn m3e-btn-main m3e-btn-xs" style="margin-left:10px;">Перейти</button>
+            </form>
+            <div id="mobile-roomid-change-hint" style="font-size:0.97em;color:#888;margin-top:7px;"></div>
+        </div>
     </div>
 </div>
 
@@ -82,7 +89,7 @@ function renderPanel(roomId) {
         <button id="clear-status-btn" class="m3e-btn m3e-btn-secondary" onclick="clearStatus()">Очистить статусы</button>
         <input type="text" id="main-info-input" class="m3e-input" placeholder="Основная информация">
         <input type="text" id="game-number-input" class="m3e-input" placeholder="Дополнительная информация">
-        <button class="reset-panel m3e-btn m3e-btn-danger" onclick="location.reload()">Сбросить панель</button>
+        <button id="reset-panel-btn" class="reset-panel m3e-btn m3e-btn-danger">Сбросить панель</button>
         <div class="overlay-toggles">
             <div class="toggle-row">
                 <label class="m3e-switch">
@@ -187,6 +194,35 @@ function renderMobileMenu(roomId) {
     // Открыть меню по-умолчанию (можно заменить на закрытое по умолчанию)
     $('#mobile-room-menu').removeClass('closed');
     $('#mobile-menu-body').show();
+
+    // Форма смены комнаты
+    $('#mobile-roomid-change-form').on('submit', function(e){
+        e.preventDefault();
+        let val = $('#mobile-roomid-change-input').val().trim();
+        if(/^\d{4}$/.test(val)){
+            localStorage.setItem('mobileRoomId', val);
+            localStorage.setItem('sessionId', val);
+            window.sessionId = val;
+            window.location.hash = '#' + val;
+            window.location.reload();
+        } else {
+            $('#mobile-roomid-change-hint').text('Введите корректный номер комнаты (4 цифры)');
+        }
+    });
+    $('#mobile-roomid-change-input').on('input', function(){
+        $('#mobile-roomid-change-hint').text('');
+    });
+
+    // Кнопка сброса панели - назначает новую комнату, очищает всё
+    $('#reset-panel-btn').off('click').on('click', function(e){
+        e.preventDefault();
+        let newId = (Math.floor(Math.random() * 9000) + 1000).toString();
+        localStorage.setItem('sessionId', newId);
+        localStorage.setItem('mobileRoomId', newId);
+        window.sessionId = newId;
+        window.location.hash = '#' + newId;
+        window.location.reload();
+    });
 }
 
 $(function(){
