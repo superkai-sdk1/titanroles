@@ -3,29 +3,130 @@
 <head>
     <meta charset="utf-8">
     <title>Мобильная комната</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Manrope:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrious/dist/qrious.min.js"></script>
 </head>
 <body>
-<div class="m3e-mobile-panel">
-    <header class="m3e-header">
-        <div class="stream-title">Мобильная комната</div>
-        <div class="titan-signature">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
-    </header>
-    <div id="mobile-room-content">
-        <!-- Динамически наполняется JS -->
-    </div>
+<div id="mobile-room-content">
+    <!-- Здесь будет либо форма ввода id, либо полностью панель управления (динамически) -->
 </div>
 <script>
-function renderRoomUI(roomId) {
-    $('#mobile-room-content').html(
-      `<div class="m3e-room-block" style="text-align:center;margin-top:48px;">
-        <div style="font-size:1.5em;margin-bottom:20px;">Вы подключены к комнате</div>
-        <div style="font-size:2.7em;font-weight:700;margin-bottom:30px;">${roomId}</div>
-      </div>`
-    );
+function renderPanel(roomId) {
+    // Вставляем весь код панели, только sessionId заменяем на roomId
+    $('#mobile-room-content').html(`
+<header class="m3e-header">
+    <div class="stream-title">Мобильная комната</div>
+    <div class="file-block">
+        <label for="fileToLoad" id="file-label" class="m3e-btn m3e-btn-main">Загрузить файл</label>
+        <input type="file" name="file" id="fileToLoad" accept=".txt">
+        <button id="manual-entry-btn" type="button" class="m3e-btn m3e-btn-secondary">Ручной ввод</button>
+    </div>
+    <div class="titan-signature">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
+</header>
+
+<div id="manual-entry-panel" class="m3e-manual-panel" style="display:none;">
+    <h2 class="m3e-manual-title">Выберите никнеймы игроков</h2>
+    <form id="manual-entry-form" class="m3e-manual-form">
+        <div id="manual-players-list" class="m3e-manual-list"></div>
+        <button type="submit" id="manual-save-btn" class="m3e-btn m3e-btn-main" style="margin-top:24px;">Сохранить рассадку</button>
+    </form>
+    <div class="titan-signature">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
+</div>
+
+<div class="main sidebar-panel show-roles-mode">
+    <h1 class="dashboard-title">Панель управления</h1>
+    <div class="player-list-panel" id="player-rows"></div>
+    <div class="panel-controls">
+        <button id="show-players-btn" class="m3e-btn m3e-btn-main" onclick="confirmRolesAndShowStatuses()">Сохранить рассадку</button>
+        <button id="edit-roles-btn" class="m3e-btn m3e-btn-secondary" onclick="editRoles()">Редактировать роли</button>
+        <button id="clear-role-btn" class="m3e-btn m3e-btn-secondary" onclick="clearRole()">Очистить роли</button>
+        <button id="clear-status-btn" class="m3e-btn m3e-btn-secondary" onclick="clearStatus()">Очистить статусы</button>
+        <input type="text" id="main-info-input" class="m3e-input" placeholder="Основная информация">
+        <input type="text" id="game-number-input" class="m3e-input" placeholder="Дополнительная информация">
+        <button class="reset-panel m3e-btn m3e-btn-danger" onclick="location.reload()">Сбросить панель</button>
+        <div class="overlay-toggles">
+            <div class="toggle-row">
+                <label class="m3e-switch">
+                    <input type="checkbox" id="toggle-hide-players">
+                    <span class="slider"></span>
+                </label>
+                <span>Скрыть игроков</span>
+            </div>
+            <div class="toggle-row">
+                <label class="m3e-switch">
+                    <input type="checkbox" id="toggle-main-info" checked>
+                    <span class="slider"></span>
+                </label>
+                <span>Основная информация</span>
+            </div>
+            <div class="toggle-row">
+                <label class="m3e-switch">
+                    <input type="checkbox" id="toggle-additional-info" checked>
+                    <span class="slider"></span>
+                </label>
+                <span>Дополнительная информация</span>
+            </div>
+            <div class="toggle-row">
+                <label class="m3e-switch">
+                    <input type="checkbox" id="toggle-status-panel" checked>
+                    <span class="slider"></span>
+                </label>
+                <span>Порядок ухода</span>
+            </div>
+            <div class="toggle-row">
+                <label class="m3e-switch">
+                    <input type="checkbox" id="toggle-blur">
+                    <span class="slider"></span>
+                </label>
+                <span>Блюр</span>
+            </div>
+        </div>
+        <div id="room-qr-section" style="display:none; margin-top: 28px; border-top: 1px solid #eee; padding-top: 18px;">
+            <div style="margin: 16px 0;">
+                <label>Номер комнаты: <b id="sessionId"></b></label>
+                <button id="copySessionId" type="button" class="m3e-btn m3e-btn-secondary" style="margin-left: 10px;">Скопировать</button>
+                <div style="margin-top: 12px;">
+                    <canvas id="qr" width="150" height="150" style="display:inline-block; border:1px solid #ccc; background:#fff;"></canvas>
+                    <span style="display:inline-block; vertical-align: top; margin-left:16px; font-size:0.95em;">
+                        Отсканируйте этот QR-код на телефоне для подключения к комнате
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="titan-signature titan-signature-inpanel">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
+    </div>
+</div>
+<div id="best-move-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">×</span>
+        <p>Выберите три цифры для Лучшего хода (ЛХ):</p>
+        <div class="number-buttons-container">
+            <div class="number-button" onclick="selectNumber(1)">1</div>
+            <div class="number-button" onclick="selectNumber(2)">2</div>
+            <div class="number-button" onclick="selectNumber(3)">3</div>
+            <div class="number-button" onclick="selectNumber(4)">4</div>
+            <div class="number-button" onclick="selectNumber(5)">5</div>
+            <div class="number-button" onclick="selectNumber(6)">6</div>
+            <div class="number-button" onclick="selectNumber(7)">7</div>
+            <div class="number-button" onclick="selectNumber(8)">8</div>
+            <div class="number-button" onclick="selectNumber(9)">9</div>
+            <div class="number-button" onclick="selectNumber(10)">10</div>
+        </div>
+        <button id="save-best-move" class="m3e-btn m3e-btn-main">Сохранить</button>
+    </div>
+</div>
+    `);
+    // Подключаем panel-скрипт, но с sessionId = roomId для мобильной панели
+    window.sessionId = roomId;
+    localStorage.setItem('mobileRoomId', roomId);
+    // Подключаем скрипт панели (не забудь добавить в конец panel.js проверку на window.sessionId = mobileRoomId)
+    $.getScript('script.js');
 }
 
 function renderJoinForm() {
@@ -44,7 +145,7 @@ function renderJoinForm() {
         if(/^\d{4}$/.test(id)){
             location.hash = '#' + id;
             localStorage.setItem('mobileRoomId', id);
-            renderRoomUI(id);
+            renderPanel(id);
         } else {
             alert('Введите корректный номер комнаты (4 цифры)');
         }
@@ -58,9 +159,7 @@ $(function(){
         roomId = localStorage.getItem('mobileRoomId') || '';
     }
     if(/^\d{4}$/.test(roomId)){
-        renderRoomUI(roomId);
-        // Сохраняем в localStorage для последующих обновлений страницы
-        localStorage.setItem('mobileRoomId', roomId);
+        renderPanel(roomId);
     } else {
         renderJoinForm();
     }
