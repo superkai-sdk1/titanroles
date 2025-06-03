@@ -1,0 +1,15 @@
+{
+  "name": "titanroles",
+  "version": "1.0.0",
+  "description": "TitanRoles — игровой проект",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "superkai-sdk1",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.5"
+  }
+}
