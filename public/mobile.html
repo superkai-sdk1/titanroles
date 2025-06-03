@@ -11,14 +11,43 @@
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrious/dist/qrious.min.js"></script>
+    <style>
+        /* Можно добавить мобильные стили сюда */
+        body { background: #fafbfb; }
+    </style>
 </head>
 <body>
 <div id="mobile-room-content">
     <!-- Здесь будет либо форма ввода id, либо полностью панель управления (динамически) -->
 </div>
 <script>
+// ======= Форма для ввода номера комнаты =======
+function renderJoinForm() {
+    $('#mobile-room-content').html(
+      `<div class="m3e-room-block" style="max-width:350px;margin:48px auto 0 auto;text-align:center;">
+        <div style="font-size:1.3em;margin-bottom:18px;">Введите номер комнаты:</div>
+        <form id="room-id-form">
+            <input id="room-id-input" type="text" maxlength="4" pattern="\\d{4}" class="m3e-input" style="font-size:1.3em;text-align:center;width:120px;" placeholder="0000" required>
+            <button type="submit" class="m3e-btn m3e-btn-main" style="margin-left:12px;">Войти</button>
+        </form>
+      </div>`
+    );
+    $('#room-id-form').on('submit', function(e){
+        e.preventDefault();
+        const id = $('#room-id-input').val().trim();
+        if(/^\d{4}$/.test(id)){
+            location.hash = '#' + id;
+            localStorage.setItem('mobileRoomId', id);
+            renderPanel(id);
+        } else {
+            alert('Введите корректный номер комнаты (4 цифры)');
+        }
+    });
+}
+
+// ======= Основная панель управления для mobile =======
 function renderPanel(roomId) {
-    // Вставляем весь код панели, только sessionId заменяем на roomId
+    // Вставляем всю панель, дублируя panel.html, но sessionId будет равен roomId
     $('#mobile-room-content').html(`
 <header class="m3e-header">
     <div class="stream-title">Мобильная комната</div>
@@ -87,6 +116,7 @@ function renderPanel(roomId) {
                 <span>Блюр</span>
             </div>
         </div>
+        <!-- QR секция — скрыта по умолчанию, появляется после загрузки/ввода списка игроков -->
         <div id="room-qr-section" style="display:none; margin-top: 28px; border-top: 1px solid #eee; padding-top: 18px;">
             <div style="margin: 16px 0;">
                 <label>Номер комнаты: <b id="sessionId"></b></label>
@@ -122,34 +152,14 @@ function renderPanel(roomId) {
     </div>
 </div>
     `);
-    // Подключаем panel-скрипт, но с sessionId = roomId для мобильной панели
-    window.sessionId = roomId;
-    localStorage.setItem('mobileRoomId', roomId);
-    // Подключаем скрипт панели (не забудь добавить в конец panel.js проверку на window.sessionId = mobileRoomId)
-    $.getScript('script.js');
-}
 
-function renderJoinForm() {
-    $('#mobile-room-content').html(
-      `<div class="m3e-room-block" style="max-width:350px;margin:48px auto 0 auto;text-align:center;">
-        <div style="font-size:1.3em;margin-bottom:18px;">Введите номер комнаты:</div>
-        <form id="room-id-form">
-            <input id="room-id-input" type="text" maxlength="4" pattern="\\d{4}" class="m3e-input" style="font-size:1.3em;text-align:center;width:120px;" placeholder="0000" required>
-            <button type="submit" class="m3e-btn m3e-btn-main" style="margin-left:12px;">Войти</button>
-        </form>
-      </div>`
-    );
-    $('#room-id-form').on('submit', function(e){
-        e.preventDefault();
-        const id = $('#room-id-input').val().trim();
-        if(/^\d{4}$/.test(id)){
-            location.hash = '#' + id;
-            localStorage.setItem('mobileRoomId', id);
-            renderPanel(id);
-        } else {
-            alert('Введите корректный номер комнаты (4 цифры)');
-        }
-    });
+    // Гарантируем, что sessionId = roomId для мобильной панели
+    window.sessionId = roomId;
+    localStorage.setItem('sessionId', roomId);
+    localStorage.setItem('mobileRoomId', roomId);
+
+    // Подключаем основной скрипт панели
+    $.getScript('script.js');
 }
 
 $(function(){
