@@ -13,6 +13,14 @@
 </head>
 <body>
 
+<!-- SVG для иконки копирования (важно: до использования <use href="#copy-icon">) -->
+<svg style="display:none;">
+    <symbol id="copy-icon" viewBox="0 0 24 24">
+        <rect x="8" y="8" width="10" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+        <rect x="4" y="4" width="10" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+</svg>
+
 <header class="m3e-header">
     <div class="stream-title">Панель управления стримом</div>
     <div class="file-block">
@@ -23,7 +31,7 @@
     <div class="titan-signature">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
 </header>
 
-<!-- Ручной ввод никнеймов -->
+<!-- Панель ручного ввода -->
 <div id="manual-entry-panel" class="m3e-manual-panel" style="display:none;">
     <h2 class="m3e-manual-title">Выберите никнеймы игроков</h2>
     <form id="manual-entry-form" class="m3e-manual-form">
@@ -122,14 +130,6 @@
         <button id="save-best-move" class="m3e-btn m3e-btn-main">Сохранить</button>
     </div>
 </div>
-
-<!-- SVG для иконки копирования -->
-<svg style="display:none;">
-    <symbol id="copy-icon" viewBox="0 0 24 24">
-        <rect x="8" y="8" width="10" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-        <rect x="4" y="4" width="10" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    </symbol>
-</svg>
 
 <script src="script.js"></script>
 </body>
