@@ -1,11 +1,40 @@
+// --- SESSION ID & QR-CODE LOGIC ---
+// Генерация или получение sessionId (глобально для проекта)
+let sessionId = localStorage.getItem('sessionId');
+if (!sessionId) {
+    sessionId = Math.random().toString(36).substring(2,10);
+    localStorage.setItem('sessionId', sessionId);
+}
+window.sessionId = sessionId; // Для глобального доступа
+
+// Отображение sessionId и QR-кода (если элементы есть на странице)
+$(function() {
+    if (document.getElementById('sessionId')) {
+        document.getElementById('sessionId').textContent = sessionId;
+    }
+    if (document.getElementById('copySessionId')) {
+        document.getElementById('copySessionId').onclick = () => {
+            navigator.clipboard.writeText(sessionId).then(() => {
+                alert('Код сессии скопирован!');
+            });
+        };
+    }
+    if (typeof QRious !== "undefined" && document.getElementById('qr')) {
+        new QRious({
+            element: document.getElementById('qr'),
+            size: 150,
+            value: `${location.origin}/mobile.html#${sessionId}`
+        });
+    }
+});
+
 // --- TITANROLES PANEL СИНХРОНИЗАЦИЯ через socket.io ---
 // Все BroadcastChannel убраны, всё идёт через socket.io
 
 const numPlayers = 10;
 const playerTable = document.getElementById('player-rows');
 
-// Получаем sessionId из localStorage (он всегда есть после panel.html)
-const sessionId = localStorage.getItem('sessionId');
+// sessionId уже инициализирован выше
 
 // Подключаемся к socket.io
 window.socket = window.socket || io();
