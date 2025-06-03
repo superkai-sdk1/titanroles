@@ -14,42 +14,6 @@
 </head>
 <body>
 
-<!-- Выпадающее меню комнаты -->
-<div id="panel-room-menu" class="custom-room-menu closed">
-    <div class="menu-header" id="panel-menu-header">
-        <span class="menu-title">Комната управления</span>
-        <span class="menu-toggle" id="panel-menu-toggle">&#9776;</span>
-    </div>
-    <div class="menu-body" id="panel-menu-body">
-        <div class="room-id-block">
-            <div class="room-id-label">Номер комнаты</div>
-            <div class="room-id-value" id="panel-menu-roomid">0000</div>
-            <button id="panel-copylink-btn" class="m3e-btn m3e-btn-secondary m3e-btn-xs panel-copy-btn" title="Скопировать ссылку">
-                <svg width="16" height="16" style="vertical-align:middle;"><use href="#copy-icon"></use></svg>
-            </button>
-        </div>
-        <div class="qr-block">
-            <canvas id="panel-menu-qr" width="150" height="150"></canvas>
-            <div class="qr-caption">
-                Отсканируйте QR код на телефоне,<br>для управления панелью с телефона
-            </div>
-        </div>
-        <div class="change-room-block">
-            <form id="change-room-form" style="margin-top:12px;">
-                <input id="change-room-input" type="text" maxlength="4" pattern="\\d{4}" class="m3e-input" style="width:110px;font-size:1.1em;text-align:center;display:inline-block;" placeholder="0000" required autocomplete="off">
-                <button type="submit" class="m3e-btn m3e-btn-main m3e-btn-xs" style="margin-left:8px;">Войти</button>
-            </form>
-        </div>
-    </div>
-</div>
-<!-- SVG для иконки копирования -->
-<svg style="display:none;">
-    <symbol id="copy-icon" viewBox="0 0 24 24">
-        <rect x="8" y="8" width="10" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-        <rect x="4" y="4" width="10" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
-    </symbol>
-</svg>
-
 <header class="m3e-header">
     <div class="stream-title">Панель управления стримом</div>
     <div class="file-block">
@@ -129,6 +93,36 @@
                 <span>Блюр</span>
             </div>
         </div>
+        <!-- КНОПКА и выпадающий блок Мобильная комната -->
+        <button id="mobile-room-toggle-btn" class="m3e-btn m3e-btn-secondary m3e-btn-xs" type="button" style="margin:18px auto 8px auto;display:block;min-width:0;width:fit-content;">Мобильная комната</button>
+        <div id="mobile-room-dropdown" class="mobile-room-dropdown" style="display:none;">
+            <div class="room-id-block">
+                <div class="room-id-label">Номер комнаты</div>
+                <div class="room-id-value" id="panel-menu-roomid">0000</div>
+                <button id="panel-copylink-btn" class="m3e-btn m3e-btn-secondary m3e-btn-xs panel-copy-btn" title="Скопировать ссылку">
+                    <svg width="16" height="16" style="vertical-align:middle;"><use href="#copy-icon"></use></svg>
+                </button>
+            </div>
+            <div class="qr-block">
+                <canvas id="panel-menu-qr" width="150" height="150"></canvas>
+                <div class="qr-caption">
+                    Отсканируйте QR код на телефоне,<br>для управления панелью с телефона
+                </div>
+            </div>
+            <div class="change-room-block">
+                <form id="change-room-form" style="margin-top:12px;">
+                    <input id="change-room-input" type="text" maxlength="4" pattern="\\d{4}" class="m3e-input" style="width:110px;font-size:1.1em;text-align:center;display:inline-block;" placeholder="0000" required autocomplete="off">
+                    <button type="submit" class="m3e-btn m3e-btn-main m3e-btn-xs" style="margin-left:8px;">Войти</button>
+                </form>
+            </div>
+        </div>
+        <!-- SVG для иконки копирования -->
+        <svg style="display:none;">
+            <symbol id="copy-icon" viewBox="0 0 24 24">
+                <rect x="8" y="8" width="10" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                <rect x="4" y="4" width="10" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+            </symbol>
+        </svg>
         <div class="titan-signature titan-signature-inpanel">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
     </div>
 </div>
@@ -155,7 +149,11 @@
 <script src="script.js"></script>
 <script>
 $(function(){
-    // Меню комнаты
+    // ВЫПАДАЮЩЕЕ МЕНЮ
+    $('#mobile-room-toggle-btn').on('click', function(){
+        $('#mobile-room-dropdown').slideToggle(150);
+    });
+    // Обновление содержимого выпадающего меню
     function updatePanelMenu(roomId) {
         $('#panel-menu-roomid').text(roomId);
         const mobileLink = `${location.origin}/mobile.html#${roomId}`;
@@ -173,20 +171,9 @@ $(function(){
             });
         }
     }
-    // Открытие/закрытие меню 
-    $('#panel-menu-toggle').off('click').on('click', function(){
-        $('#panel-room-menu').toggleClass('closed');
-        $('#panel-menu-body').slideToggle(180);
-    });
-    // Открыто по умолчанию
-    $('#panel-room-menu').removeClass('closed');
-    $('#panel-menu-body').show();
-
     // sessionId из script.js или localStorage
     let roomId = window.sessionId || localStorage.getItem('sessionId') || '0000';
     updatePanelMenu(roomId);
-
-    // После смены комнаты (например, при обновлении по другому id) обновить меню
     window.updatePanelMenu = updatePanelMenu;
 
     // Смена комнаты через форму
@@ -195,6 +182,9 @@ $(function(){
         const newRoomId = $('#change-room-input').val().trim();
         if(/^\d{4}$/.test(newRoomId)){
             window.changeSessionId(newRoomId);
+            // Обновить меню после смены комнаты
+            updatePanelMenu(newRoomId);
+            $('#mobile-room-dropdown').slideUp(150);
         } else {
             alert('Введите корректный номер комнаты (4 цифры)');
         }
