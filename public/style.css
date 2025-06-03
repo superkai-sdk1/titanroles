@@ -751,3 +751,75 @@ input[type="text"]:focus, select:focus { border-color: var(--md-sys-color-primar
     background: var(--md-sys-color-primary);
     color: var(--md-sys-color-on-primary);
 }
+/* Добавлено и изменено для красивого меню комнаты и мелкой кнопки копирования */
+.custom-room-menu .room-id-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 18px;
+}
+.custom-room-menu .room-id-label {
+    font-size: 0.98em;
+    color: var(--md-sys-color-outline);
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+.custom-room-menu .room-id-value {
+    font-size: 2.3em;
+    font-weight: 900;
+    color: var(--md-sys-color-primary);
+    font-family: var(--font-headline);
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+    margin-top: 3px;
+    background: var(--md-sys-color-surface);
+    padding: 7px 26px;
+    border-radius: 16px;
+    display: inline-block;
+    box-shadow: 0 2px 16px 0 #42008a22;
+    border: 2px solid var(--md-sys-color-primary);
+    user-select: all;
+}
+.custom-room-menu .panel-copy-btn {
+    font-size: 0.92em !important;
+    min-width: 0 !important;
+    padding: 6px 13px !important;
+    border-radius: 12px !important;
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    vertical-align: middle !important;
+}
+.custom-room-menu .qr-block {
+    margin: 0 auto 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.custom-room-menu .qr-block canvas {
+    display: block;
+    margin: 0 auto 0 auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 1px 8px #0002;
+    border: 1.5px solid var(--md-sys-color-outline);
+}
+.custom-room-menu .qr-caption {
+    font-size: 1em;
+    color: var(--md-sys-color-on-surface-variant);
+    margin-top: 14px;
+    line-height: 1.4;
+    text-align: center;
+    font-family: var(--font-body);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+.custom-room-menu .change-room-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Сохраняем остальные стили панели */
+/* ... (оставьте все остальные стили файла без изменений) ... */
