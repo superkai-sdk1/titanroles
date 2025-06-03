@@ -11,15 +11,6 @@ const sessions = {}; // { sessionId: { ...state } }
 
 app.use(express.static('public'));
 
-// --- Добавлено: API для сброса комнаты (по sessionId) ---
-app.get('/api/reset-room/:sessionId', (req, res) => {
-  const sessionId = req.params.sessionId;
-  if (sessions[sessionId]) {
-    delete sessions[sessionId];
-  }
-  res.json({ status: 'ok', message: 'Room reset', sessionId });
-});
-
 io.on('connection', (socket) => {
   // Отправка состояния комнаты по запросу getSessionState
   socket.on('getSessionState', ({ sessionId }) => {
@@ -75,6 +66,10 @@ io.on('connection', (socket) => {
       sessions[sessionId].players = sessions[sessionId].players || [];
       let pl = sessions[sessionId].players.find(p => p.id === event.id);
       if (pl) pl.bestMove = event.bestMove;
+    } else if (event.type === 'resetSession') {
+      // Сброс всей комнаты
+      delete sessions[sessionId];
+      return; // не отправлять дальше
     }
     // Можно добавить другие типы событий аналогично
 
