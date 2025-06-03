@@ -435,21 +435,71 @@ socket.on('overlayEvent', (event) => {
 socket.on('mobileEvent', (event) => {
     console.log('mobileEvent', event);
 });
+
+// --- ГЛАВНОЕ ИЗМЕНЕНИЕ ---
+// Слушаем ВСЕ panelEvent (теперь сервер отправляет их всем участникам комнаты, включая mobile, panel, overlay)
+socket.on('panelEvent', (event) => {
+    // Применить event к UI (аналогично overlayEvent)
+    if (window.handlePanelEvent) {
+        window.handlePanelEvent(event);
+    } else {
+        // Минимальная поддержка для мобильной панели:
+        if (event.type === 'playerName' && event.value) {
+            const [id, name] = event.value.split('|');
+            const el = document.getElementById(id);
+            if (el) {
+                let select = el.querySelector('.player-select');
+                if (select) {
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].text === name) {
+                            select.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if ((event.type === 'playerStatus' || event.type === 'playerRole') && event.id && event.classList !== undefined) {
+            const el = document.getElementById(event.id);
+            if (el) el.className = 'player-row player ' + event.classList;
+        }
+        if (event.type === 'mainInfo' && event.value !== undefined) {
+            $('#main-info-input').val(event.value);
+        }
+        if (event.type === 'gameInfo' && event.value !== undefined) {
+            $('#game-number-input').val(event.value);
+        }
+        // Можно добавить другие типы событий по необходимости
+    }
+});
+
 socket.on('sessionState', (state) => {
     // Применить state к UI панели (например, восстановить игроков/роли)
     if (!state) return;
     // state: {players: [{id, name, classList}], mainInfo, gameInfo, ...}
     if (Array.isArray(state.players)) {
-        state.players.forEach(player => {
+        // --- Главное отличие: пересоздать строки игроков под state.players! ---
+        createPlayerRows(state.players.length);
+        // Заполнить селекты и классы
+        state.players.forEach((player, idx) => {
             let el = document.getElementById(player.id);
             if (el) {
                 el.className = 'player-row player ' + (player.classList || '');
                 let select = el.querySelector('.player-select');
-                if (select && player.name) {
-                    for (let i = 0; i < select.options.length; i++) {
-                        if (select.options[i].text === player.name) {
-                            select.selectedIndex = i;
-                            break;
+                if (select) {
+                    // Если имя есть, создать опцию если её нет (для мобильной панели с кастомным списком)
+                    if (player.name) {
+                        let exists = false;
+                        for (let i = 0; i < select.options.length; i++) {
+                            if (select.options[i].text === player.name) {
+                                select.selectedIndex = i;
+                                exists = true;
+                                break;
+                            }
+                        }
+                        if (!exists) {
+                            select.add(new Option(player.name));
+                            select.selectedIndex = select.options.length - 1;
                         }
                     }
                 }
