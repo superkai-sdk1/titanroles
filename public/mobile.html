@@ -2,143 +2,69 @@
 <html lang="ru">
 <head>
     <meta charset="utf-8">
-    <title>TitanRoles — Мобильная панель</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <link rel="stylesheet" href="overlay.css">
+    <title>Мобильная комната</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Manrope:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
     <script src="/socket.io/socket.io.js"></script>
 </head>
-<body class="visible">
-<!-- Блок слева: Дополнительная информация -->
-<div class="overlay-header" id="overlay-header">
-    <div class="overlay-info-block" id="game-info">Дополнительная информация</div>
-</div>
-<!-- Новый блок по центру: Основная информация -->
-<div class="overlay-main-block" id="main-info">Основная информация</div>
-<!-- Новый блок справа: статус-панель -->
-<div class="status-panel" id="status-panel">
-    <div class="status-line">
-        <div class="icon killed-icon"></div>
-        <span id="killed-players"></span>
-        <div class="icon voted-icon"></div>
-        <span id="voted-players"></span>
+<body>
+<div class="m3e-mobile-panel">
+    <header class="m3e-header">
+        <div class="stream-title">Мобильная комната</div>
+        <div class="titan-signature">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
+    </header>
+    <div id="mobile-room-content">
+        <!-- Динамически наполняется JS -->
     </div>
 </div>
-<div id="overlay-blur-el" class="overlay-blur"></div>
-<footer class="show-roles" id="footer-players">
-    <div class="player" id="player_1">
-        <div class="photo"></div>
-        <div class="bg"></div>
-        <div class="status"></div>
-        <div class="role"></div>
-        <div class="number">1</div>
-        <div class="nick"></div>
-    </div>
-    <div class="player" id="player_2">
-        <div class="bg"></div>
-        <div class="photo"></div>
-        <div class="status"></div>
-        <div class="role"></div>
-        <div class="number">2</div>
-        <div class="nick"></div>
-    </div>
-    <div class="player" id="player_3">
-        <div class="bg"></div>
-        <div class="photo"></div>
-        <div class="status"></div>
-        <div class="role"></div>
-        <div class="number">3</div>
-        <div class="nick"></div>
-    </div>
-    <div class="player" id="player_4">
-        <div class="bg"></div>
-        <div class="photo"></div>
-        <div class="status"></div>
-        <div class="role"></div>
-        <div class="number">4</div>
-        <div class="nick"></div>
-    </div>
-    <div class="player" id="player_5">
-        <div class="bg"></div>
-        <div class="photo"></div>
-        <div class="status"></div>
-        <div class="role"></div>
-        <div class="number">5</div>
-        <div class="nick"></div>
-    </div>
-    <div class="player" id="player_6">
-        <div class="bg"></div>
-        <div class="photo"></div>
-        <div class="status"></div>
-        <div class="role"></div>
-        <div class="number">6</div>
-        <div class="nick"></div>
-    </div>
-    <div class="player" id="player_7">
-        <div class="bg"></div>
-        <div class="photo"></div>
-        <div class="status"></div>
-        <div class="role"></div>
-        <div class="number">7</div>
-        <div class="nick"></div>
-    </div>
-    <div class="player" id="player_8">
-        <div class="bg"></div>
-        <div class="photo"></div>
-        <div class="status"></div>
-        <div class="role"></div>
-        <div class="number">8</div>
-        <div class="nick"></div>
-    </div>
-    <div class="player" id="player_9">
-        <div class="bg"></div>
-        <div class="photo"></div>
-        <div class="status"></div>
-        <div class="role"></div>
-        <div class="number">9</div>
-        <div class="nick"></div>
-    </div>
-    <div class="player" id="player_10">
-        <div class="bg"></div>
-        <div class="photo"></div>
-        <div class="status"></div>
-        <div class="role"></div>
-        <div class="number">10</div>
-        <div class="nick"></div>
-    </div>
-</footer>
-
-<!-- Сессия, без QR -->
-<div style="position:fixed; top:20px; right:20px; background:#222; color:#fff; padding:15px; border-radius:10px; z-index:9999;">
-    <div>
-        Код вашей сессии: <b id="sessionId"></b>
-        <button id="copySessionId" style="margin-left:10px;">Скопировать</button>
-    </div>
-</div>
-
 <script>
-    // Генерация/получение sessionId
-    let sessionId = localStorage.getItem('sessionId');
-    if (!sessionId) {
-        sessionId = Math.random().toString(36).substring(2,10);
-        localStorage.setItem('sessionId', sessionId);
+function renderRoomUI(roomId) {
+    $('#mobile-room-content').html(
+      `<div class="m3e-room-block" style="text-align:center;margin-top:48px;">
+        <div style="font-size:1.5em;margin-bottom:20px;">Вы подключены к комнате</div>
+        <div style="font-size:2.7em;font-weight:700;margin-bottom:30px;">${roomId}</div>
+      </div>`
+    );
+}
+
+function renderJoinForm() {
+    $('#mobile-room-content').html(
+      `<div class="m3e-room-block" style="max-width:350px;margin:48px auto 0 auto;text-align:center;">
+        <div style="font-size:1.3em;margin-bottom:18px;">Введите номер комнаты:</div>
+        <form id="room-id-form">
+            <input id="room-id-input" type="text" maxlength="4" pattern="\\d{4}" class="m3e-input" style="font-size:1.3em;text-align:center;width:120px;" placeholder="0000" required>
+            <button type="submit" class="m3e-btn m3e-btn-main" style="margin-left:12px;">Войти</button>
+        </form>
+      </div>`
+    );
+    $('#room-id-form').on('submit', function(e){
+        e.preventDefault();
+        const id = $('#room-id-input').val().trim();
+        if(/^\d{4}$/.test(id)){
+            location.hash = '#' + id;
+            localStorage.setItem('mobileRoomId', id);
+            renderRoomUI(id);
+        } else {
+            alert('Введите корректный номер комнаты (4 цифры)');
+        }
+    });
+}
+
+$(function(){
+    let roomId = location.hash.replace(/^#/, '');
+    if(!roomId){
+        // Пробуем взять из localStorage (например, после обновления)
+        roomId = localStorage.getItem('mobileRoomId') || '';
     }
-    document.getElementById('sessionId').textContent = sessionId;
-
-    // Кнопка копирования sessionId
-    document.getElementById('copySessionId').onclick = () => {
-        navigator.clipboard.writeText(sessionId).then(() => {
-            alert('Код сессии скопирован!');
-        });
-    };
-
-    // Подключение к socket.io
-    const socket = io();
-    socket.emit('joinSession', sessionId);
-    // Здесь дальше будет логика синхронизации, например: socket.emit('panelEvent', ...);
-    // Всё, что связано с overlaySettings перенесено в overlay.js
+    if(/^\d{4}$/.test(roomId)){
+        renderRoomUI(roomId);
+        // Сохраняем в localStorage для последующих обновлений страницы
+        localStorage.setItem('mobileRoomId', roomId);
+    } else {
+        renderJoinForm();
+    }
+});
 </script>
-<script src="script.js"></script>
-<script src="overlay.js"></script>
 </body>
 </html>
