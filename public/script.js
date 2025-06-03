@@ -18,28 +18,32 @@ function getRoomIdFromUrlOrStorage() {
 let sessionId = getRoomIdFromUrlOrStorage();
 window.sessionId = sessionId;
 
-// --- QR/ID секция: показывать только после загрузки игроков (panel) или всегда (mobile) ---
-function showRoomQRSection() {
-    $('#sessionId').text(sessionId);
-    $('#copySessionId').off('click').on('click', function () {
-        const link = `${location.origin}/mobile.html#${sessionId}`;
-        navigator.clipboard.writeText(link).then(() => {
+// --- Нижнее меню QR/ID: показывать только после загрузки игроков (panel) ---
+function showBottomRoomMenu() {
+    $('#bottom-menu-roomid').text(sessionId);
+    const mobileLink = `${location.origin}/mobile.html#${sessionId}`;
+    $('#bottom-copylink-btn').off('click').on('click', function () {
+        navigator.clipboard.writeText(mobileLink).then(() => {
             $(this).text('Скопировано!');
-            setTimeout(() => $(this).text('Скопировать'), 1200);
+            setTimeout(()=>$(this).html('<svg width="18" height="18"><use href="#copy-icon"></use></svg>'), 1200);
         });
     });
-    if (typeof QRious !== "undefined" && document.getElementById('qr')) {
-        document.getElementById('qr').getContext('2d').clearRect(0, 0, 150, 150);
+    if (typeof QRious !== "undefined" && document.getElementById('bottom-menu-qr')) {
+        // Очищаем QR если уже был
+        let qrCanvas = document.getElementById('bottom-menu-qr');
+        let ctx = qrCanvas.getContext('2d');
+        ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
         new QRious({
-            element: document.getElementById('qr'),
+            element: qrCanvas,
             size: 150,
-            value: `${location.origin}/mobile.html#${sessionId}`
+            value: mobileLink
         });
     }
-    $('#room-qr-section').slideDown();
+    $('#bottom-room-menu').fadeIn();
 }
-function hideRoomQRSection() {
-    $('#room-qr-section').hide();
+
+function hideBottomRoomMenu() {
+    $('#bottom-room-menu').hide();
 }
 
 // --- TITANROLES PANEL СИНХРОНИЗАЦИЯ через socket.io ---
@@ -102,7 +106,7 @@ function initPanelOrMobile() {
         $('.main').show();
         $('header').hide();
         $('#manual-entry-panel').hide();
-        showRoomQRSection(); // QR всегда виден на mobile (через меню)
+        // showRoomQRSection(); // QR всегда виден на mobile (через меню)
     } else {
         // PANEL
         $('.main').hide();
@@ -120,47 +124,11 @@ function initPanelOrMobile() {
                 hideStatusesShowRoles();
             });
         }
-        hideRoomQRSection(); // QR скрыт при загрузке
+        hideBottomRoomMenu();
     }
 
     // После создания строк — запросить состояние комнаты с сервера
     socket.emit('getSessionState', { sessionId });
-
-    // Обновить QR и номер комнаты в mobile/panel-меню (если есть)
-    if ($('#mobile-menu-roomid').length) {
-        $('#mobile-menu-roomid').text(sessionId);
-        const mobileLink = `${location.origin}/mobile.html#${sessionId}`;
-        $('#mobile-copylink-btn').off('click').on('click', function () {
-            navigator.clipboard.writeText(mobileLink).then(() => {
-                $(this).text('Скопировано!');
-                setTimeout(()=>$(this).html('<svg width="18" height="18"><use href="#copy-icon"></use></svg>'), 1200);
-            });
-        });
-        if (typeof QRious !== "undefined" && document.getElementById('mobile-menu-qr')) {
-            new QRious({
-                element: document.getElementById('mobile-menu-qr'),
-                size: 150,
-                value: mobileLink
-            });
-        }
-    }
-    if ($('#panel-menu-roomid').length) {
-        $('#panel-menu-roomid').text(sessionId);
-        const mobileLink = `${location.origin}/mobile.html#${sessionId}`;
-        $('#panel-copylink-btn').off('click').on('click', function () {
-            navigator.clipboard.writeText(mobileLink).then(() => {
-                $(this).text('Скопировано!');
-                setTimeout(()=>$(this).html('<svg width="18" height="18"><use href="#copy-icon"></use></svg>'), 1200);
-            });
-        });
-        if (typeof QRious !== "undefined" && document.getElementById('panel-menu-qr')) {
-            new QRious({
-                element: document.getElementById('panel-menu-qr'),
-                size: 150,
-                value: mobileLink
-            });
-        }
-    }
 }
 
 $(document).ready(initPanelOrMobile);
@@ -169,7 +137,7 @@ $(document).ready(initPanelOrMobile);
 $('#manual-entry-btn').on('click', function() {
     $('header').hide();
     $('#manual-entry-panel').show();
-    hideRoomQRSection();
+    hideBottomRoomMenu();
 
     let html = '';
     for (let i = 1; i <= numPlayers; i++) {
@@ -205,7 +173,7 @@ $('#manual-entry-form').on('submit', function(e) {
 
     $('#manual-entry-panel').hide();
     $('.main').show();
-    showRoomQRSection();
+    showBottomRoomMenu();
 });
 
 function loadFileAsText() {
@@ -215,7 +183,7 @@ function loadFileAsText() {
         var textFromFileLoaded = fileLoadedEvent.target.result;
         getPlayerList(textFromFileLoaded.split('\r\n'));
         sendAllData();
-        showRoomQRSection();
+        showBottomRoomMenu();
     };
     fileReader.readAsText(fileToLoad, "UTF-8");
     $('.main').show();
@@ -440,4 +408,13 @@ socket.on('sessionState', (state) => {
     if (state.gameInfo !== undefined) $('#game-number-input').val(state.gameInfo);
     // режим отображения (ролей/статусов) можешь доработать по желанию
     console.log('Восстановлено состояние комнаты', state);
+});
+
+// --- КНОПКА СБРОСИТЬ ПАНЕЛЬ: создаёт новую комнату и перезагружает страницу ---
+$('#reset-panel-btn').off('click').on('click', function(e){
+    e.preventDefault();
+    let newId = (Math.floor(Math.random() * 9000) + 1000).toString();
+    localStorage.setItem('sessionId', newId);
+    window.sessionId = newId;
+    window.location.reload();
 });
