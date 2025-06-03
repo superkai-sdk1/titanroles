@@ -74,7 +74,7 @@ io.on('connection', (socket) => {
     // Можно добавить другие типы событий аналогично
 
     // Перезаписываем полное состояние (players, info, settings и т.д.)
-    socket.to(sessionId).emit('panelEvent', event);
+    io.to(sessionId).emit('panelEvent', event); // теперь всем участникам комнаты!
   });
 
   socket.on('overlayEvent', ({ sessionId, event }) => {
