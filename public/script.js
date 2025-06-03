@@ -126,7 +126,7 @@ function initPanelOrMobile() {
     // После создания строк — запросить состояние комнаты с сервера
     socket.emit('getSessionState', { sessionId });
 
-    // Обновить QR и номер комнаты в mobile-меню (если есть)
+    // Обновить QR и номер комнаты в mobile/panel-меню (если есть)
     if ($('#mobile-menu-roomid').length) {
         $('#mobile-menu-roomid').text(sessionId);
         const mobileLink = `${location.origin}/mobile.html#${sessionId}`;
@@ -139,6 +139,23 @@ function initPanelOrMobile() {
         if (typeof QRious !== "undefined" && document.getElementById('mobile-menu-qr')) {
             new QRious({
                 element: document.getElementById('mobile-menu-qr'),
+                size: 150,
+                value: mobileLink
+            });
+        }
+    }
+    if ($('#panel-menu-roomid').length) {
+        $('#panel-menu-roomid').text(sessionId);
+        const mobileLink = `${location.origin}/mobile.html#${sessionId}`;
+        $('#panel-copylink-btn').off('click').on('click', function () {
+            navigator.clipboard.writeText(mobileLink).then(() => {
+                $(this).text('Скопировано!');
+                setTimeout(()=>$(this).html('<svg width="18" height="18"><use href="#copy-icon"></use></svg>'), 1200);
+            });
+        });
+        if (typeof QRious !== "undefined" && document.getElementById('panel-menu-qr')) {
+            new QRious({
+                element: document.getElementById('panel-menu-qr'),
                 size: 150,
                 value: mobileLink
             });
