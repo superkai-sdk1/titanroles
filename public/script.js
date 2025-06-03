@@ -1,51 +1,42 @@
 // --- SESSION ID & QR-CODE LOGIC ---
-// Генерация или получение sessionId (глобально для проекта) с надёжной проверкой
-let sessionId = localStorage.getItem('sessionId');
-if (
-    typeof sessionId !== "string" ||
-    sessionId.length < 6 ||                        // гарантируем минимальную длину
-    /[^a-z0-9]/i.test(sessionId)                   // нет странных символов
-) {
-    sessionId = Math.random().toString(36).substring(2, 10);
-    localStorage.setItem('sessionId', sessionId);
+// Генерация или получение sessionId (номер комнаты: 4 случайные цифры, 1000-9999)
+function getOrCreateRoomId() {
+    let roomId = localStorage.getItem('sessionId');
+    if (!/^\d{4}$/.test(roomId)) {
+        roomId = (Math.floor(Math.random() * 9000) + 1000).toString();
+        localStorage.setItem('sessionId', roomId);
+    }
+    return roomId;
 }
+let sessionId = getOrCreateRoomId();
 window.sessionId = sessionId; // Для глобального доступа
 
-// Отображение sessionId и QR-кода (если элементы есть на странице)
-$(function() {
-    // Для отладки
-    console.log('sessionId:', sessionId);
-
-    if (document.getElementById('sessionId')) {
-        document.getElementById('sessionId').textContent = sessionId;
-    }
-    if (document.getElementById('copySessionId')) {
-        document.getElementById('copySessionId').onclick = () => {
-            navigator.clipboard.writeText(sessionId).then(() => {
-                alert('Код сессии скопирован!');
-            });
-        };
-    }
+// --- Показ/скрытие секции с QR и номером комнаты ---
+function showRoomQRSection() {
+    $('#sessionId').text(sessionId);
+    $('#copySessionId').off('click').on('click', function () {
+        navigator.clipboard.writeText(sessionId).then(() => {
+            alert('Номер комнаты скопирован!');
+        });
+    });
     if (typeof QRious !== "undefined" && document.getElementById('qr')) {
+        // Перерисуем QR (очистим canvas)
+        document.getElementById('qr').getContext('2d').clearRect(0, 0, 150, 150);
         new QRious({
             element: document.getElementById('qr'),
             size: 150,
             value: `${location.origin}/mobile.html#${sessionId}`
         });
-    } else {
-        console.log('QRious или #qr не найден!');
     }
-});
+    $('#room-qr-section').slideDown();
+}
+function hideRoomQRSection() {
+    $('#room-qr-section').hide();
+}
 
 // --- TITANROLES PANEL СИНХРОНИЗАЦИЯ через socket.io ---
-// Все BroadcastChannel убраны, всё идёт через socket.io
-
 const numPlayers = 10;
 const playerTable = document.getElementById('player-rows');
-
-// sessionId уже инициализирован выше
-
-// Подключаемся к socket.io
 window.socket = window.socket || io();
 const socket = window.socket;
 
@@ -108,12 +99,14 @@ $(document).ready(function () {
             hideStatusesShowRoles();
         });
     }
+    hideRoomQRSection(); // QR скрыт при загрузке
 });
 
 // --- Ручной ввод никнеймов ---
 $('#manual-entry-btn').on('click', function() {
     $('header').hide();
     $('#manual-entry-panel').show();
+    hideRoomQRSection();
 
     // Генерируем 10 полей с автодополнением (autocomplete)
     let html = '';
@@ -152,6 +145,7 @@ $('#manual-entry-form').on('submit', function(e) {
 
     $('#manual-entry-panel').hide();
     $('.main').show();
+    showRoomQRSection(); // ПОКАЗАТЬ QR после ручного ввода
 });
 
 function loadFileAsText() {
@@ -161,11 +155,13 @@ function loadFileAsText() {
         var textFromFileLoaded = fileLoadedEvent.target.result;
         getPlayerList(textFromFileLoaded.split('\r\n'));
         sendAllData();
+        showRoomQRSection(); // ПОКАЗАТЬ QR после загрузки файла
     };
     fileReader.readAsText(fileToLoad, "UTF-8");
     $('.main').show();
     $('header').hide();
     hideStatusesShowRoles();
+    // QR не показываем пока не загрузится, будет показан после onload
 }
 
 function getPlayerList(playerArray) {
