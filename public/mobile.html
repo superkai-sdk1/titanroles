@@ -11,15 +11,37 @@
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrious/dist/qrious.min.js"></script>
-    <style>
-        /* Можно добавить мобильные стили сюда */
-        body { background: #fafbfb; }
-    </style>
 </head>
 <body>
-<div id="mobile-room-content">
-    <!-- Здесь будет либо форма ввода id, либо полностью панель управления (динамически) -->
+<div id="mobile-room-content"></div>
+
+<!-- Мобильное меню комнаты (будет показываться всегда поверх) -->
+<div id="mobile-room-menu" class="mobile-room-menu closed">
+    <div class="menu-header" id="mobile-menu-header">
+        <span class="menu-title">Мобильная комната</span>
+        <span class="menu-toggle" id="mobile-menu-toggle">&#9776;</span>
+    </div>
+    <div class="menu-body" id="mobile-menu-body">
+        <div class="room-id-block">
+            <div class="room-id-label">Номер комнаты</div>
+            <div class="room-id-value" id="mobile-menu-roomid">0000</div>
+            <button id="mobile-copylink-btn" class="m3e-btn m3e-btn-secondary m3e-btn-xs" title="Скопировать ссылку"><svg width="18" height="18" style="vertical-align:middle;"><use href="#copy-icon"></use></svg></button>
+        </div>
+        <div class="qr-block">
+            <canvas id="mobile-menu-qr" width="150" height="150"></canvas>
+            <div class="qr-caption">Отсканируйте QR код на телефоне,<br>для управления панелью с телефона</div>
+        </div>
+    </div>
 </div>
+
+<!-- SVG для иконки копирования -->
+<svg style="display:none;">
+    <symbol id="copy-icon" viewBox="0 0 24 24">
+        <rect x="8" y="8" width="10" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+        <rect x="4" y="4" width="10" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+</svg>
+
 <script>
 // ======= Форма для ввода номера комнаты =======
 function renderJoinForm() {
@@ -39,6 +61,7 @@ function renderJoinForm() {
             location.hash = '#' + id;
             localStorage.setItem('mobileRoomId', id);
             renderPanel(id);
+            renderMobileMenu(id);
         } else {
             alert('Введите корректный номер комнаты (4 цифры)');
         }
@@ -47,27 +70,8 @@ function renderJoinForm() {
 
 // ======= Основная панель управления для mobile =======
 function renderPanel(roomId) {
-    // Вставляем всю панель, дублируя panel.html, но sessionId будет равен roomId
+    // Вставляем всю панель (скрываем загрузку файла, ручной ввод)
     $('#mobile-room-content').html(`
-<header class="m3e-header">
-    <div class="stream-title">Мобильная комната</div>
-    <div class="file-block">
-        <label for="fileToLoad" id="file-label" class="m3e-btn m3e-btn-main">Загрузить файл</label>
-        <input type="file" name="file" id="fileToLoad" accept=".txt">
-        <button id="manual-entry-btn" type="button" class="m3e-btn m3e-btn-secondary">Ручной ввод</button>
-    </div>
-    <div class="titan-signature">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
-</header>
-
-<div id="manual-entry-panel" class="m3e-manual-panel" style="display:none;">
-    <h2 class="m3e-manual-title">Выберите никнеймы игроков</h2>
-    <form id="manual-entry-form" class="m3e-manual-form">
-        <div id="manual-players-list" class="m3e-manual-list"></div>
-        <button type="submit" id="manual-save-btn" class="m3e-btn m3e-btn-main" style="margin-top:24px;">Сохранить рассадку</button>
-    </form>
-    <div class="titan-signature">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
-</div>
-
 <div class="main sidebar-panel show-roles-mode">
     <h1 class="dashboard-title">Панель управления</h1>
     <div class="player-list-panel" id="player-rows"></div>
@@ -116,19 +120,6 @@ function renderPanel(roomId) {
                 <span>Блюр</span>
             </div>
         </div>
-        <!-- QR секция — скрыта по умолчанию, появляется после загрузки/ввода списка игроков -->
-        <div id="room-qr-section" style="display:none; margin-top: 28px; border-top: 1px solid #eee; padding-top: 18px;">
-            <div style="margin: 16px 0;">
-                <label>Номер комнаты: <b id="sessionId"></b></label>
-                <button id="copySessionId" type="button" class="m3e-btn m3e-btn-secondary" style="margin-left: 10px;">Скопировать</button>
-                <div style="margin-top: 12px;">
-                    <canvas id="qr" width="150" height="150" style="display:inline-block; border:1px solid #ccc; background:#fff;"></canvas>
-                    <span style="display:inline-block; vertical-align: top; margin-left:16px; font-size:0.95em;">
-                        Отсканируйте этот QR-код на телефоне для подключения к комнате
-                    </span>
-                </div>
-            </div>
-        </div>
         <div class="titan-signature titan-signature-inpanel">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
     </div>
 </div>
@@ -153,23 +144,59 @@ function renderPanel(roomId) {
 </div>
     `);
 
-    // Гарантируем, что sessionId = roomId для мобильной панели
+    // sessionId = roomId
     window.sessionId = roomId;
     localStorage.setItem('sessionId', roomId);
     localStorage.setItem('mobileRoomId', roomId);
+
+    renderMobileMenu(roomId);
 
     // Подключаем основной скрипт панели
     $.getScript('script.js');
 }
 
+// ======= Мобильное меню комнаты =======
+function renderMobileMenu(roomId) {
+    // Обновить номер комнаты
+    $('#mobile-menu-roomid').text(roomId);
+
+    // QR и мобильная ссылка
+    const mobileLink = `${location.origin}/mobile.html#${roomId}`;
+    $('#mobile-copylink-btn').off('click').on('click', function () {
+        navigator.clipboard.writeText(mobileLink).then(() => {
+            $(this).text('Скопировано!');
+            setTimeout(()=>$(this).html('<svg width="18" height="18"><use href="#copy-icon"></use></svg>'), 1200);
+        });
+    });
+
+    // QR
+    if (typeof QRious !== "undefined" && document.getElementById('mobile-menu-qr')) {
+        new QRious({
+            element: document.getElementById('mobile-menu-qr'),
+            size: 150,
+            value: mobileLink
+        });
+    }
+
+    // Открытие/закрытие меню (мобильная "гамбургер" логика)
+    $('#mobile-menu-toggle').off('click').on('click', function(){
+        $('#mobile-room-menu').toggleClass('closed');
+        $('#mobile-menu-body').slideToggle(180);
+    });
+
+    // Открыть меню по-умолчанию (можно заменить на закрытое по умолчанию)
+    $('#mobile-room-menu').removeClass('closed');
+    $('#mobile-menu-body').show();
+}
+
 $(function(){
     let roomId = location.hash.replace(/^#/, '');
     if(!roomId){
-        // Пробуем взять из localStorage (например, после обновления)
         roomId = localStorage.getItem('mobileRoomId') || '';
     }
     if(/^\d{4}$/.test(roomId)){
         renderPanel(roomId);
+        renderMobileMenu(roomId);
     } else {
         renderJoinForm();
     }
