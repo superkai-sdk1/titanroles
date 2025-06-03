@@ -25,18 +25,13 @@
         <div class="room-id-block">
             <div class="room-id-label">Номер комнаты</div>
             <div class="room-id-value" id="mobile-menu-roomid">0000</div>
-            <button id="mobile-copylink-btn" class="m3e-btn m3e-btn-secondary m3e-btn-xs" title="Скопировать ссылку"><svg width="18" height="18" style="vertical-align:middle;"><use href="#copy-icon"></use></svg></button>
+            <button id="mobile-copylink-btn" class="m3e-btn m3e-btn-secondary m3e-btn-xs" title="Скопировать ссылку">
+                <svg width="16" height="16" style="vertical-align:middle;"><use href="#copy-icon"></use></svg>
+            </button>
         </div>
         <div class="qr-block">
             <canvas id="mobile-menu-qr" width="150" height="150"></canvas>
             <div class="qr-caption">Отсканируйте QR код на телефоне,<br>для управления панелью с телефона</div>
-        </div>
-        <div style="margin-top: 20px;">
-            <form id="mobile-roomid-change-form" autocomplete="off">
-                <input id="mobile-roomid-change-input" type="text" maxlength="4" pattern="\d{4}" class="m3e-input" style="font-size:1.2em;text-align:center;width:120px;" placeholder="Ввести номер комнаты" required>
-                <button type="submit" class="m3e-btn m3e-btn-main m3e-btn-xs" style="margin-left:10px;">Перейти</button>
-            </form>
-            <div id="mobile-roomid-change-hint" style="font-size:0.97em;color:#888;margin-top:7px;"></div>
         </div>
     </div>
 </div>
@@ -50,34 +45,8 @@
 </svg>
 
 <script>
-// ======= Форма для ввода номера комнаты =======
-function renderJoinForm() {
-    $('#mobile-room-content').html(
-      `<div class="m3e-room-block" style="max-width:350px;margin:48px auto 0 auto;text-align:center;">
-        <div style="font-size:1.3em;margin-bottom:18px;">Введите номер комнаты:</div>
-        <form id="room-id-form">
-            <input id="room-id-input" type="text" maxlength="4" pattern="\\d{4}" class="m3e-input" style="font-size:1.3em;text-align:center;width:120px;" placeholder="0000" required>
-            <button type="submit" class="m3e-btn m3e-btn-main" style="margin-left:12px;">Войти</button>
-        </form>
-      </div>`
-    );
-    $('#room-id-form').on('submit', function(e){
-        e.preventDefault();
-        const id = $('#room-id-input').val().trim();
-        if(/^\d{4}$/.test(id)){
-            location.hash = '#' + id;
-            localStorage.setItem('mobileRoomId', id);
-            renderPanel(id);
-            renderMobileMenu(id);
-        } else {
-            alert('Введите корректный номер комнаты (4 цифры)');
-        }
-    });
-}
-
-// ======= Основная панель управления для mobile =======
+// ======= Основная логика: сразу панель =======
 function renderPanel(roomId) {
-    // Вставляем всю панель (скрываем загрузку файла, ручной ввод)
     $('#mobile-room-content').html(`
 <div class="main sidebar-panel show-roles-mode">
     <h1 class="dashboard-title">Панель управления</h1>
@@ -89,7 +58,7 @@ function renderPanel(roomId) {
         <button id="clear-status-btn" class="m3e-btn m3e-btn-secondary" onclick="clearStatus()">Очистить статусы</button>
         <input type="text" id="main-info-input" class="m3e-input" placeholder="Основная информация">
         <input type="text" id="game-number-input" class="m3e-input" placeholder="Дополнительная информация">
-        <button id="reset-panel-btn" class="reset-panel m3e-btn m3e-btn-danger">Сбросить панель</button>
+        <button class="reset-panel m3e-btn m3e-btn-danger" onclick="location.reload()">Сбросить панель</button>
         <div class="overlay-toggles">
             <div class="toggle-row">
                 <label class="m3e-switch">
@@ -151,32 +120,27 @@ function renderPanel(roomId) {
 </div>
     `);
 
-    // sessionId = roomId
     window.sessionId = roomId;
     localStorage.setItem('sessionId', roomId);
     localStorage.setItem('mobileRoomId', roomId);
 
     renderMobileMenu(roomId);
 
-    // Подключаем основной скрипт панели
     $.getScript('script.js');
 }
 
 // ======= Мобильное меню комнаты =======
 function renderMobileMenu(roomId) {
-    // Обновить номер комнаты
     $('#mobile-menu-roomid').text(roomId);
 
-    // QR и мобильная ссылка
     const mobileLink = `${location.origin}/mobile.html#${roomId}`;
     $('#mobile-copylink-btn').off('click').on('click', function () {
         navigator.clipboard.writeText(mobileLink).then(() => {
             $(this).text('Скопировано!');
-            setTimeout(()=>$(this).html('<svg width="18" height="18"><use href="#copy-icon"></use></svg>'), 1200);
+            setTimeout(()=>$(this).html('<svg width="16" height="16"><use href="#copy-icon"></use></svg>'), 1200);
         });
     });
 
-    // QR
     if (typeof QRious !== "undefined" && document.getElementById('mobile-menu-qr')) {
         new QRious({
             element: document.getElementById('mobile-menu-qr'),
@@ -185,43 +149,37 @@ function renderMobileMenu(roomId) {
         });
     }
 
-    // Открытие/закрытие меню (мобильная "гамбургер" логика)
     $('#mobile-menu-toggle').off('click').on('click', function(){
         $('#mobile-room-menu').toggleClass('closed');
         $('#mobile-menu-body').slideToggle(180);
     });
 
-    // Открыть меню по-умолчанию (можно заменить на закрытое по умолчанию)
     $('#mobile-room-menu').removeClass('closed');
     $('#mobile-menu-body').show();
+}
 
-    // Форма смены комнаты
-    $('#mobile-roomid-change-form').on('submit', function(e){
+// Логика выбора комнаты — если нет, просим ввести
+function renderJoinForm() {
+    $('#mobile-room-content').html(
+      `<div class="m3e-room-block" style="max-width:350px;margin:48px auto 0 auto;text-align:center;">
+        <div style="font-size:1.3em;margin-bottom:18px;">Введите номер комнаты:</div>
+        <form id="room-id-form">
+            <input id="room-id-input" type="text" maxlength="4" pattern="\\d{4}" class="m3e-input" style="font-size:1.3em;text-align:center;width:120px;" placeholder="0000" required>
+            <button type="submit" class="m3e-btn m3e-btn-main" style="margin-left:12px;">Войти</button>
+        </form>
+      </div>`
+    );
+    $('#room-id-form').on('submit', function(e){
         e.preventDefault();
-        let val = $('#mobile-roomid-change-input').val().trim();
-        if(/^\d{4}$/.test(val)){
-            localStorage.setItem('mobileRoomId', val);
-            localStorage.setItem('sessionId', val);
-            window.sessionId = val;
-            window.location.hash = '#' + val;
-            window.location.reload();
+        const id = $('#room-id-input').val().trim();
+        if(/^\d{4}$/.test(id)){
+            location.hash = '#' + id;
+            localStorage.setItem('mobileRoomId', id);
+            renderPanel(id);
+            renderMobileMenu(id);
         } else {
-            $('#mobile-roomid-change-hint').text('Введите корректный номер комнаты (4 цифры)');
+            alert('Введите корректный номер комнаты (4 цифры)');
         }
-    });
-    $('#mobile-roomid-change-input').on('input', function(){
-        $('#mobile-roomid-change-hint').text('');
-    });
-
-    // Кнопка сброса панели - назначает новую комнату, очищает всё
-    $('#reset-panel-btn').off('click').on('click', function(e){
-        e.preventDefault();
-        let newId = (Math.floor(Math.random() * 9000) + 1000).toString();
-        localStorage.setItem('sessionId', newId);
-        localStorage.setItem('mobileRoomId', newId);
-        window.sessionId = newId;
-        window.location.hash = '#' + newId;
-        window.location.reload();
     });
 }
 
