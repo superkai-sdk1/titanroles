@@ -30,12 +30,12 @@ html, body {
     font-size: 16px;
     color: var(--md-sys-color-on-surface);
     margin: 0;
-    overflow-x: hidden; /* <--- Запрещаем горизонтальный скролл */
+    overflow-x: hidden;
 }
 
 body {
     color: var(--md-sys-color-on-surface);
-    overflow-x: hidden; /* <--- Запрещаем горизонтальный скролл для body */
+    overflow-x: hidden;
 }
 
 /* --- M3E HEADER & BUTTONS --- */
@@ -54,7 +54,7 @@ body {
 }
 
 .stream-title {
-    font-size: 1.4em; /* уменьшен размер шрифта */
+    font-size: 1.4em;
     font-weight: 900;
     color: var(--md-sys-color-primary);
     letter-spacing: 0.01em;
@@ -123,7 +123,6 @@ header input[type="file"] { display: none; }
     color: #fff;
 }
 
-/* Центрирование текста и выравнивание для всех кнопок */
 .m3e-btn, .m3e-btn-main, .m3e-btn-secondary, .m3e-btn-danger {
     display: flex;
     align-items: center;
@@ -590,181 +589,34 @@ input[type="text"]:focus, select:focus { border-color: var(--md-sys-color-primar
     transform: translateX(22px);
     background: var(--md-sys-color-primary-container);
 }
-/* --- Мобильное выпадающее меню комнаты --- */
-.mobile-room-menu {
-    position: fixed;
-    top: 0; left: 0; width: 100vw;
-    z-index: 2000;
+
+/* DROPDOWN меню мобильной комнаты внутри панели */
+.mobile-room-dropdown {
     background: var(--md-sys-color-surface-container-high);
     box-shadow: 0 6px 32px #0008;
-    border-bottom-left-radius: var(--md-sys-shape-corner-large);
-    border-bottom-right-radius: var(--md-sys-shape-corner-large);
-    transition: box-shadow 0.18s, background 0.18s;
-    padding: 0;
-    min-height: 0;
-}
-
-.mobile-room-menu.closed .menu-body {
-    display: none;
-}
-
-.menu-header {
-    display: flex;
-    align-items: center;
-    padding: 14px 20px 14px 16px;
-    cursor: pointer;
-    user-select: none;
-    background: var(--md-sys-color-surface-container-high);
-    border-bottom: 1px solid var(--md-sys-color-outline);
-    border-top-left-radius: var(--md-sys-shape-corner-large);
-    border-top-right-radius: var(--md-sys-shape-corner-large);
-}
-.menu-title {
-    flex: 1 1 auto;
-    font-size: 1.3em;
-    font-weight: 800;
-    color: var(--md-sys-color-primary);
-    font-family: var(--font-headline);
-    text-shadow: 0 2px 14px #42008a33;
-    letter-spacing: 0.01em;
-}
-.menu-toggle {
-    font-size: 1.89em;
-    line-height: 1;
-    padding: 0 5px;
-    color: var(--md-sys-color-primary);
-    cursor: pointer;
-    user-select: none;
-}
-.menu-body {
-    padding: 13px 18px 17px 18px;
-    text-align: center;
-    background: var(--md-sys-color-surface-container-high);
-    border-bottom-left-radius: var(--md-sys-shape-corner-large);
-    border-bottom-right-radius: var(--md-sys-shape-corner-large);
-}
-
-.room-id-block {
-    margin-bottom: 16px;
+    border-radius: var(--md-sys-shape-corner-large);
+    margin: 0 auto 8px auto;
+    padding: 18px 14px 14px 14px;
+    max-width: 350px;
+    min-width: 210px;
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-.room-id-label {
-    font-size: 0.99em;
-    color: var(--md-sys-color-outline);
-    font-weight: 600;
-    margin-bottom: 3px;
-}
-.room-id-value {
-    font-size: 2.05em;
-    font-weight: 900;
-    color: var(--md-sys-color-primary);
-    font-family: var(--font-headline);
-    letter-spacing: 0.05em;
-    margin-bottom: 8px;
-    margin-top: 3px;
-    background: var(--md-sys-color-surface);
-    padding: 7px 22px;
-    border-radius: 16px;
-    display: inline-block;
-    box-shadow: 0 2px 16px 0 #42008a22;
-    border: 2px solid var(--md-sys-color-primary);
-    user-select: all;
-}
-
-.m3e-btn-xs {
-    font-size: 0.93em !important;
-    min-width: 0 !important;
-    padding: 7px 15px !important;
-    border-radius: 12px !important;
-    margin-left: 5px !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    vertical-align: middle !important;
-}
-
-.qr-block {
-    margin: 0 auto 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-.qr-block canvas {
-    display: block;
-    margin: 0 auto 0 auto;
-    background: #fff;
-    border-radius: 14px;
-    box-shadow: 0 1px 8px #0002;
     border: 1.5px solid var(--md-sys-color-outline);
 }
-.qr-caption {
-    font-size: 1em;
-    color: var(--md-sys-color-on-surface-variant);
-    margin-top: 14px;
-    line-height: 1.4;
-    text-align: center;
-    font-family: var(--font-body);
-    font-weight: 500;
-    letter-spacing: 0.02em;
-}
-
-/* --- Для мобильных --- */
-@media (max-width: 600px) {
-    .mobile-room-menu,
-    .menu-header,
-    .menu-body {
-        border-radius: 0 !important;
-        padding-left: 9px !important;
-        padding-right: 9px !important;
-    }
-    .room-id-value {
-        font-size: 1.45em;
-        padding: 5px 10px;
-    }
-    .qr-block canvas {
-        width: 110px !important;
-        height: 110px !important;
-    }
-    .qr-caption {
-        font-size: 0.96em;
-    }
-}
-
-/* --- Кнопка копировать (иконка) --- */
-#mobile-copylink-btn svg {
-    vertical-align: middle;
-    margin-top: -1px;
-    margin-right: -2px;
-    fill: var(--md-sys-color-primary);
-    stroke: var(--md-sys-color-primary);
-    stroke-width: 1.6;
-}
-#mobile-copylink-btn {
-    background: var(--md-sys-color-primary-container);
-    color: var(--md-sys-color-on-primary-container);
-    border: 1.5px solid var(--md-sys-color-primary);
-    transition: background .13s, color .13s;
-}
-#mobile-copylink-btn:hover, #mobile-copylink-btn:focus {
-    background: var(--md-sys-color-primary);
-    color: var(--md-sys-color-on-primary);
-}
-/* Добавлено и изменено для красивого меню комнаты и мелкой кнопки копирования */
-.custom-room-menu .room-id-block {
+.mobile-room-dropdown .room-id-block {
     display: flex;
     flex-direction: column;
     align-items: center;
     margin-bottom: 18px;
 }
-.custom-room-menu .room-id-label {
+.mobile-room-dropdown .room-id-label {
     font-size: 0.98em;
     color: var(--md-sys-color-outline);
     font-weight: 500;
     margin-bottom: 4px;
 }
-.custom-room-menu .room-id-value {
+.mobile-room-dropdown .room-id-value {
     font-size: 2.3em;
     font-weight: 900;
     color: var(--md-sys-color-primary);
@@ -780,7 +632,7 @@ input[type="text"]:focus, select:focus { border-color: var(--md-sys-color-primar
     border: 2px solid var(--md-sys-color-primary);
     user-select: all;
 }
-.custom-room-menu .panel-copy-btn {
+.mobile-room-dropdown .panel-copy-btn {
     font-size: 0.92em !important;
     min-width: 0 !important;
     padding: 6px 13px !important;
@@ -790,14 +642,14 @@ input[type="text"]:focus, select:focus { border-color: var(--md-sys-color-primar
     margin-bottom: 0 !important;
     vertical-align: middle !important;
 }
-.custom-room-menu .qr-block {
+.mobile-room-dropdown .qr-block {
     margin: 0 auto 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
 }
-.custom-room-menu .qr-block canvas {
+.mobile-room-dropdown .qr-block canvas {
     display: block;
     margin: 0 auto 0 auto;
     background: #fff;
@@ -805,7 +657,7 @@ input[type="text"]:focus, select:focus { border-color: var(--md-sys-color-primar
     box-shadow: 0 1px 8px #0002;
     border: 1.5px solid var(--md-sys-color-outline);
 }
-.custom-room-menu .qr-caption {
+.mobile-room-dropdown .qr-caption {
     font-size: 1em;
     color: var(--md-sys-color-on-surface-variant);
     margin-top: 14px;
@@ -815,11 +667,72 @@ input[type="text"]:focus, select:focus { border-color: var(--md-sys-color-primar
     font-weight: 500;
     letter-spacing: 0.02em;
 }
-.custom-room-menu .change-room-block {
+.mobile-room-dropdown .change-room-block {
+    width: 100%;
+    margin-top: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-/* Сохраняем остальные стили панели */
-/* ... (оставьте все остальные стили файла без изменений) ... */
+/* Кнопка "Мобильная комната" */
+#mobile-room-toggle-btn {
+    margin-bottom: 8px;
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    border: 1.5px solid var(--md-sys-color-primary);
+    font-size: 1.12em;
+    font-weight: 700;
+    min-width: 0;
+    padding: 7px 19px;
+    border-radius: 12px;
+}
+
+/* --- Для мобильных --- */
+@media (max-width: 600px) {
+    .mobile-room-dropdown,
+    .mobile-room-menu,
+    .menu-header,
+    .menu-body {
+        border-radius: 0 !important;
+        padding-left: 9px !important;
+        padding-right: 9px !important;
+    }
+    .mobile-room-dropdown .room-id-value,
+    .room-id-value {
+        font-size: 1.45em;
+        padding: 5px 10px;
+    }
+    .mobile-room-dropdown .qr-block canvas,
+    .qr-block canvas {
+        width: 110px !important;
+        height: 110px !important;
+    }
+    .mobile-room-dropdown .qr-caption,
+    .qr-caption {
+        font-size: 0.96em;
+    }
+}
+
+/* --- Кнопка копировать (иконка) --- */
+#mobile-copylink-btn svg,
+#panel-copylink-btn svg {
+    vertical-align: middle;
+    margin-top: -1px;
+    margin-right: -2px;
+    fill: var(--md-sys-color-primary);
+    stroke: var(--md-sys-color-primary);
+    stroke-width: 1.6;
+}
+#mobile-copylink-btn,
+#panel-copylink-btn {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    border: 1.5px solid var(--md-sys-color-primary);
+    transition: background .13s, color .13s;
+}
+#mobile-copylink-btn:hover, #mobile-copylink-btn:focus,
+#panel-copylink-btn:hover, #panel-copylink-btn:focus {
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+}
