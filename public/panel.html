@@ -118,45 +118,5 @@
 </div>
 
 <script src="script.js"></script>
-<script>
-    // --- SESSION ID & QR-CODE LOGIC ---
-    // Получение или генерация sessionId (сохраняется между сессиями)
-    let sessionId = localStorage.getItem('sessionId');
-    if (!sessionId) {
-        sessionId = Math.random().toString(36).substring(2,10);
-        localStorage.setItem('sessionId', sessionId);
-    }
-    // Отобразить sessionId
-    document.getElementById('sessionId').textContent = sessionId;
-    // Кнопка копирования
-    document.getElementById('copySessionId').onclick = () => {
-        navigator.clipboard.writeText(sessionId).then(() => {
-            alert('Код сессии скопирован!');
-        });
-    };
-    // Сгенерировать QR-код для mobile.html с этим sessionId
-    new QRious({
-        element: document.getElementById('qr'),
-        size: 150,
-        value: `${location.origin}/mobile.html#${sessionId}`
-    });
-
-    // Overlay settings channel (оставлено для совместимости, перенесём позже!)
-    const overlaySettings = new BroadcastChannel('overlay_settings');
-    function sendOverlaySettings() {
-        overlaySettings.postMessage({
-            hidePlayers: document.getElementById('toggle-hide-players').checked,
-            showMainInfo: document.getElementById('toggle-main-info').checked,
-            showAdditionalInfo: document.getElementById('toggle-additional-info').checked,
-            showStatusPanel: document.getElementById('toggle-status-panel').checked,
-            blur: document.getElementById('toggle-blur').checked,
-        });
-    }
-    // Инициализация дефолтных состояний
-    $(function() {
-        $('.overlay-toggles input[type="checkbox"]').on('change', sendOverlaySettings);
-        sendOverlaySettings();
-    });
-</script>
 </body>
 </html>
