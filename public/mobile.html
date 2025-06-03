@@ -58,7 +58,7 @@ function renderPanel(roomId) {
         <button id="clear-status-btn" class="m3e-btn m3e-btn-secondary" onclick="clearStatus()">Очистить статусы</button>
         <input type="text" id="main-info-input" class="m3e-input" placeholder="Основная информация">
         <input type="text" id="game-number-input" class="m3e-input" placeholder="Дополнительная информация">
-        <button class="reset-panel m3e-btn m3e-btn-danger" onclick="location.reload()">Сбросить панель</button>
+        <button id="reset-panel-btn" class="reset-panel m3e-btn m3e-btn-danger">Сбросить панель</button>
         <div class="overlay-toggles">
             <div class="toggle-row">
                 <label class="m3e-switch">
@@ -126,6 +126,7 @@ function renderPanel(roomId) {
 
     renderMobileMenu(roomId);
 
+    // Подгружаем основной скрипт панели (в нем логика синхронизации и работы)
     $.getScript('script.js');
 }
 
