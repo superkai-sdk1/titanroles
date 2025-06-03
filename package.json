@@ -2,9 +2,9 @@
   "name": "titanroles",
   "version": "1.0.0",
   "description": "TitanRoles — игровой проект",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server.js"
   },
   "author": "superkai-sdk1",
   "license": "MIT",
