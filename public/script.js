@@ -1,14 +1,21 @@
 // --- SESSION ID & QR-CODE LOGIC ---
-// Генерация или получение sessionId (глобально для проекта)
+// Генерация или получение sessionId (глобально для проекта) с надёжной проверкой
 let sessionId = localStorage.getItem('sessionId');
-if (!sessionId) {
-    sessionId = Math.random().toString(36).substring(2,10);
+if (
+    typeof sessionId !== "string" ||
+    sessionId.length < 6 ||                        // гарантируем минимальную длину
+    /[^a-z0-9]/i.test(sessionId)                   // нет странных символов
+) {
+    sessionId = Math.random().toString(36).substring(2, 10);
     localStorage.setItem('sessionId', sessionId);
 }
 window.sessionId = sessionId; // Для глобального доступа
 
 // Отображение sessionId и QR-кода (если элементы есть на странице)
 $(function() {
+    // Для отладки
+    console.log('sessionId:', sessionId);
+
     if (document.getElementById('sessionId')) {
         document.getElementById('sessionId').textContent = sessionId;
     }
@@ -25,6 +32,8 @@ $(function() {
             size: 150,
             value: `${location.origin}/mobile.html#${sessionId}`
         });
+    } else {
+        console.log('QRious или #qr не найден!');
     }
 });
 
