@@ -13,15 +13,6 @@
     <script src="https://cdn.jsdelivr.net/npm/qrious/dist/qrious.min.js"></script>
 </head>
 <body>
-<!-- Секция для отображения sessionId и QR-кода -->
-<div style="margin: 16px 0;">
-    <label>Код вашей сессии: <b id="sessionId"></b></label>
-    <button id="copySessionId" type="button" class="m3e-btn m3e-btn-secondary" style="margin-left: 10px;">Скопировать</button>
-    <div style="margin-top: 12px;">
-        <canvas id="qr" style="display:inline-block; border:1px solid #ccc; background:#fff;"></canvas>
-        <span style="display:inline-block; vertical-align: top; margin-left:16px; font-size:0.95em;">Отсканируйте этот QR-код на телефоне для подключения к комнате</span>
-    </div>
-</div>
 
 <header class="m3e-header">
     <div class="stream-title">Панель управления стримом</div>
@@ -92,6 +83,19 @@
                     <span class="slider"></span>
                 </label>
                 <span>Блюр</span>
+            </div>
+        </div>
+        <!-- QR секция — скрыта по умолчанию, появляется после загрузки/ввода списка игроков -->
+        <div id="room-qr-section" style="display:none; margin-top: 28px; border-top: 1px solid #eee; padding-top: 18px;">
+            <div style="margin: 16px 0;">
+                <label>Номер комнаты: <b id="sessionId"></b></label>
+                <button id="copySessionId" type="button" class="m3e-btn m3e-btn-secondary" style="margin-left: 10px;">Скопировать</button>
+                <div style="margin-top: 12px;">
+                    <canvas id="qr" style="display:inline-block; border:1px solid #ccc; background:#fff;"></canvas>
+                    <span style="display:inline-block; vertical-align: top; margin-left:16px; font-size:0.95em;">
+                        Отсканируйте этот QR-код на телефоне для подключения к комнате
+                    </span>
+                </div>
             </div>
         </div>
         <div class="titan-signature titan-signature-inpanel">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
