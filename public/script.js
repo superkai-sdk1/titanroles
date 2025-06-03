@@ -9,9 +9,9 @@ function getOrCreateRoomId() {
     return roomId;
 }
 let sessionId = getOrCreateRoomId();
-window.sessionId = sessionId; // Для глобального доступа
+window.sessionId = sessionId;
 
-// --- Показ/скрытие секции с QR и номером комнаты ---
+// --- QR/ID секция: показывать только после загрузки игроков ---
 function showRoomQRSection() {
     $('#sessionId').text(sessionId);
     $('#copySessionId').off('click').on('click', function () {
@@ -20,7 +20,6 @@ function showRoomQRSection() {
         });
     });
     if (typeof QRious !== "undefined" && document.getElementById('qr')) {
-        // Перерисуем QR (очистим canvas)
         document.getElementById('qr').getContext('2d').clearRect(0, 0, 150, 150);
         new QRious({
             element: document.getElementById('qr'),
@@ -163,6 +162,18 @@ function loadFileAsText() {
     hideStatusesShowRoles();
     // QR не показываем пока не загрузится, будет показан после onload
 }
+
+function getPlayerList(playerArray) {
+    document.querySelectorAll('.player-select').forEach((element, index) => {
+        $(element).empty();
+        playerArray.forEach(player => {
+            element.add(new Option(player.trim()));
+        });
+        $(element).children('option').eq(index).attr('selected', 'selected');
+    });
+}
+
+// --- ... остальной код панели без изменений ... (оставь всё как есть) ---
 
 function getPlayerList(playerArray) {
     document.querySelectorAll('.player-select').forEach((element, index) => {
