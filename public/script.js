@@ -1,22 +1,31 @@
-// --- SESSION ID & QR-CODE LOGIC ---
-// Генерация или получение sessionId (номер комнаты: 4 случайные цифры, 1000-9999)
-function getOrCreateRoomId() {
-    let roomId = localStorage.getItem('sessionId');
-    if (!/^\d{4}$/.test(roomId)) {
-        roomId = (Math.floor(Math.random() * 9000) + 1000).toString();
-        localStorage.setItem('sessionId', roomId);
+// --- SESSION ID & ROOM LOGIC (универсально для panel и mobile) ---
+function getRoomIdFromUrlOrStorage() {
+    // Пробуем из URL hash (mobile)
+    let hash = window.location.hash.replace(/^#/, '');
+    if (/^\d{4}$/.test(hash)) {
+        localStorage.setItem('sessionId', hash);
+        localStorage.setItem('mobileRoomId', hash);
+        return hash;
     }
+    // Пробуем из localStorage (panel и mobile)
+    let stored = localStorage.getItem('sessionId') || localStorage.getItem('mobileRoomId');
+    if (/^\d{4}$/.test(stored)) return stored;
+    // Генерируем новый для panel
+    let roomId = (Math.floor(Math.random() * 9000) + 1000).toString();
+    localStorage.setItem('sessionId', roomId);
     return roomId;
 }
-let sessionId = getOrCreateRoomId();
+let sessionId = getRoomIdFromUrlOrStorage();
 window.sessionId = sessionId;
 
-// --- QR/ID секция: показывать только после загрузки игроков ---
+// --- QR/ID секция: показывать только после загрузки игроков (panel) или всегда (mobile) ---
 function showRoomQRSection() {
     $('#sessionId').text(sessionId);
     $('#copySessionId').off('click').on('click', function () {
-        navigator.clipboard.writeText(sessionId).then(() => {
-            alert('Номер комнаты скопирован!');
+        const link = `${location.origin}/mobile.html#${sessionId}`;
+        navigator.clipboard.writeText(link).then(() => {
+            $(this).text('Скопировано!');
+            setTimeout(() => $(this).text('Скопировать'), 1200);
         });
     });
     if (typeof QRious !== "undefined" && document.getElementById('qr')) {
@@ -41,6 +50,7 @@ const socket = window.socket;
 
 // --- Список никнеймов для ручного ввода ---
 const nicknameList = [
+    // ... (оставь как есть)
     "AMOR", "Asia", "Alien", "Alinellas", "Animag", "Bittir", "Black", "Black Jack", "DULASHA", "Dill",
     "Dizi", "Dushman", "EL", "Fox", "Gremlin", "Geralt", "Gestalter", "Hisoka", "Ivory", "Kai",
     "LIRICA", "Miamore", "Mulan", "Neo", "ProDoc", "Shinobi", "Soza", "Saul Goodman", "Scorpion",
@@ -56,7 +66,9 @@ const nicknameList = [
 
 let isFirstKill = true;
 
+// --- Генерация строк игроков ---
 function createPlayerRows(num) {
+    playerTable.innerHTML = '';
     for (let i = 1; i <= num; i++) {
         const row = document.createElement('div');
         row.className = 'player-row player';
@@ -81,33 +93,67 @@ function createPlayerRows(num) {
     }
 }
 
-$(document).ready(function () {
+// --- Универсальная инициализация для panel и mobile ---
+function initPanelOrMobile() {
     createPlayerRows(numPlayers);
-    $('.main').hide();
-    getPlayerList(nicknameList);
-    const welcomeModal = document.getElementById('welcome-modal');
-    if (welcomeModal) {
-        welcomeModal.style.display = 'block';
-        $('#fileToLoad').on('change', function () {
-            welcomeModal.style.display = 'none';
-            $('.main').show();
-        });
-    } else {
-        $('#fileToLoad').on('change', function () {
-            $('.main').show();
-            hideStatusesShowRoles();
-        });
-    }
-    hideRoomQRSection(); // QR скрыт при загрузке
-});
 
-// --- Ручной ввод никнеймов ---
+    // MOBILE: Скрыть загрузку файла и ручной ввод, сразу показать панель
+    if (window.location.pathname.includes('mobile.html')) {
+        $('.main').show();
+        $('header').hide();
+        $('#manual-entry-panel').hide();
+        showRoomQRSection(); // QR всегда виден на mobile (через меню)
+    } else {
+        // PANEL
+        $('.main').hide();
+        getPlayerList(nicknameList);
+        const welcomeModal = document.getElementById('welcome-modal');
+        if (welcomeModal) {
+            welcomeModal.style.display = 'block';
+            $('#fileToLoad').on('change', function () {
+                welcomeModal.style.display = 'none';
+                $('.main').show();
+            });
+        } else {
+            $('#fileToLoad').on('change', function () {
+                $('.main').show();
+                hideStatusesShowRoles();
+            });
+        }
+        hideRoomQRSection(); // QR скрыт при загрузке
+    }
+
+    // После создания строк — запросить состояние комнаты с сервера
+    socket.emit('getSessionState', { sessionId });
+
+    // Обновить QR и номер комнаты в mobile-меню (если есть)
+    if ($('#mobile-menu-roomid').length) {
+        $('#mobile-menu-roomid').text(sessionId);
+        const mobileLink = `${location.origin}/mobile.html#${sessionId}`;
+        $('#mobile-copylink-btn').off('click').on('click', function () {
+            navigator.clipboard.writeText(mobileLink).then(() => {
+                $(this).text('Скопировано!');
+                setTimeout(()=>$(this).html('<svg width="18" height="18"><use href="#copy-icon"></use></svg>'), 1200);
+            });
+        });
+        if (typeof QRious !== "undefined" && document.getElementById('mobile-menu-qr')) {
+            new QRious({
+                element: document.getElementById('mobile-menu-qr'),
+                size: 150,
+                value: mobileLink
+            });
+        }
+    }
+}
+
+$(document).ready(initPanelOrMobile);
+
+// --- Ручной ввод никнеймов (panel only) ---
 $('#manual-entry-btn').on('click', function() {
     $('header').hide();
     $('#manual-entry-panel').show();
     hideRoomQRSection();
 
-    // Генерируем 10 полей с автодополнением (autocomplete)
     let html = '';
     for (let i = 1; i <= numPlayers; i++) {
         html += `
@@ -119,14 +165,12 @@ $('#manual-entry-btn').on('click', function() {
     }
     $('#manual-players-list').html(html);
 
-    // jQuery UI Autocomplete для каждого input
     $('.manual-nickname-input').autocomplete({
         source: nicknameList,
         minLength: 1
     });
 });
 
-// Обработка сохранения ручного ввода
 $('#manual-entry-form').on('submit', function(e) {
     e.preventDefault();
     let selected = [];
@@ -144,7 +188,7 @@ $('#manual-entry-form').on('submit', function(e) {
 
     $('#manual-entry-panel').hide();
     $('.main').show();
-    showRoomQRSection(); // ПОКАЗАТЬ QR после ручного ввода
+    showRoomQRSection();
 });
 
 function loadFileAsText() {
@@ -154,13 +198,12 @@ function loadFileAsText() {
         var textFromFileLoaded = fileLoadedEvent.target.result;
         getPlayerList(textFromFileLoaded.split('\r\n'));
         sendAllData();
-        showRoomQRSection(); // ПОКАЗАТЬ QR после загрузки файла
+        showRoomQRSection();
     };
     fileReader.readAsText(fileToLoad, "UTF-8");
     $('.main').show();
     $('header').hide();
     hideStatusesShowRoles();
-    // QR не показываем пока не загрузится, будет показан после onload
 }
 
 function getPlayerList(playerArray) {
@@ -173,18 +216,7 @@ function getPlayerList(playerArray) {
     });
 }
 
-// --- ... остальной код панели без изменений ... (оставь всё как есть) ---
-
-function getPlayerList(playerArray) {
-    document.querySelectorAll('.player-select').forEach((element, index) => {
-        $(element).empty();
-        playerArray.forEach(player => {
-            element.add(new Option(player.trim()));
-        });
-        $(element).children('option').eq(index).attr('selected', 'selected');
-    });
-}
-
+// --- Управление статусами и ролями, синхронизация через socket.io ---
 function changeStatus(object, status) {
     const element = object.parentElement.parentElement.parentElement.parentElement;
     if (element.classList.contains(status)) {
@@ -358,7 +390,7 @@ function sendPanelEvent(event) {
     socket.emit('panelEvent', { sessionId, event });
 }
 
-// --- Получение событий от overlay или mobile (если нужно) ---
+// --- Получение событий и восстановление состояния комнаты ---
 socket.on('overlayEvent', (event) => {
     // Обработка событий overlay, если нужно
     console.log('overlayEvent', event);
@@ -368,5 +400,27 @@ socket.on('mobileEvent', (event) => {
 });
 socket.on('sessionState', (state) => {
     // Применить state к UI панели (например, восстановить игроков/роли)
-    console.log('sessionState', state);
+    if (!state) return;
+    // state: {players: [{id, name, classList}], mainInfo, gameInfo, ...}
+    if (Array.isArray(state.players)) {
+        state.players.forEach(player => {
+            let el = document.getElementById(player.id);
+            if (el) {
+                el.className = 'player-row player ' + (player.classList || '');
+                let select = el.querySelector('.player-select');
+                if (select && player.name) {
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].text === player.name) {
+                            select.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    }
+    if (state.mainInfo !== undefined) $('#main-info-input').val(state.mainInfo);
+    if (state.gameInfo !== undefined) $('#game-number-input').val(state.gameInfo);
+    // режим отображения (ролей/статусов) можешь доработать по желанию
+    console.log('Восстановлено состояние комнаты', state);
 });
