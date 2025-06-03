@@ -23,7 +23,7 @@
     <div class="titan-signature">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
 </header>
 
-<!-- M3E-стилизованный контейнер для ручного ввода -->
+<!-- Ручной ввод никнеймов -->
 <div id="manual-entry-panel" class="m3e-manual-panel" style="display:none;">
     <h2 class="m3e-manual-title">Выберите никнеймы игроков</h2>
     <form id="manual-entry-form" class="m3e-manual-form">
@@ -33,7 +33,7 @@
     <div class="titan-signature">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
 </div>
 
-<div class="main sidebar-panel show-roles-mode">
+<div class="main sidebar-panel show-roles-mode" style="display:none;">
     <h1 class="dashboard-title">Панель управления</h1>
     <div class="player-list-panel" id="player-rows">
         <!-- Игроки будут добавлены скриптом -->
@@ -86,7 +86,7 @@
         <div class="titan-signature titan-signature-inpanel">© 2025 by TITAN KBR. Powered and secured by TITAN DEV</div>
     </div>
 
-    <!-- Нижнее выпадающее меню — появляется только после загрузки игроков/файла -->
+    <!-- Нижнее меню QR и номера комнаты -->
     <div id="bottom-room-menu" class="bottom-room-menu" style="display:none;">
         <div class="room-id-block">
             <div class="room-id-label">Номер комнаты</div>
@@ -101,7 +101,9 @@
         </div>
     </div>
 </div>
-<div id="best-move-modal" class="modal">
+
+<!-- Модалка ЛХ -->
+<div id="best-move-modal" class="modal" style="display:none;">
     <div class="modal-content">
         <span class="close">×</span>
         <p>Выберите три цифры для Лучшего хода (ЛХ):</p>
